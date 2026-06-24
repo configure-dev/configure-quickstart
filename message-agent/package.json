@@ -1,0 +1,22 @@
+{
+  "name": "configure-quickstart-message-agent",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "An iMessage/SMS agent that recognizes the user by phone with Configure.",
+  "scripts": {
+    "dev": "tsx watch agent.ts",
+    "start": "tsx agent.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "configure": "^1.1.7",
+    "dotenv": "^17.0.0",
+    "spectrum-ts": "^5.2.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0"
+  }
+}
