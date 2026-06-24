@@ -18,7 +18,7 @@
 </p>
 
 <p align="center">
-  <a href="[https://configure-demo.fly.dev/?mode=story]"><img src="./assets/continue-with-configure.svg" alt="Continue with Configure" height="46"></a>
+  <a href="https://configure-demo.fly.dev/?mode=story"><img src="./assets/continue-with-configure.svg" alt="Continue with Configure" height="46"></a>
 </p>
 
 ---
