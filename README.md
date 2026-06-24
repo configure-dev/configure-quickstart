@@ -23,7 +23,7 @@
 
 ---
 
-Install one package and your agent recognizes the user from the first message — across every channel, monetized automatically.
+One package, one call. Your agent recognizes the user from the first message — across every channel, monetized automatically.
 
 Two complete, copy-paste examples — each is the whole integration:
 
