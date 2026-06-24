@@ -18,7 +18,7 @@
 </p>
 
 <p align="center">
-  <a href="https://configure-demo.fly.dev/?mode=story"><img src="./assets/continue-with-configure.svg" alt="Continue with Configure" height="46"></a>
+  <a href="https://configure-demo.fly.dev/?mode=story" target="_blank" rel="noopener noreferrer"><img src="./assets/continue-with-configure.svg" alt="Continue with Configure" height="46"></a>
 </p>
 
 ---
@@ -70,7 +70,7 @@ const { token } = await configure.auth.exchangeSignInCode(code);    // exchange 
 const profile = await configure.profile({ token }).read();         // read
 ```
 
-The same hosted link works on the web (a redirect), in iMessage (a text), or in a voice agent (read aloud) — and Configure recognizes the same user across all of them at once. One identity, every channel.
+The same hosted link works on the web (a redirect), in iMessage (a text), or in a voice agent (read aloud) — and Configure recognizes the same user across all of them at once. One identity, ever[...]
 
 ## Quickstart
 
@@ -83,7 +83,7 @@ npm install
 npm run dev              # → http://localhost:4000
 ```
 
-Open the page, click **Continue with Configure**, and you land on a page showing the profile your server just read. Get your keys with `npx configure setup` or from the [dashboard](https://configure.dev).
+Open the page, click **Continue with Configure**, and you land on a page showing the profile your server just read. Get your keys with `npx configure setup` or from the [dashboard](https://configu[...]
 
 ## Keys
 
@@ -107,11 +107,11 @@ The secret key never leaves your server. The browser only ever holds the publish
   show profile  ◀──── profile.read() ◀── exchangeSignInCode(code) ◀────┘ redirect ?code=
 ```
 
-In an agent, the redirect collapses into a single message. The agent texts the link, the user signs in once, and `resolveMessageIdentity` matches them by phone on every turn after that — no second sign-in. See [`message-agent/`](./message-agent) for the full loop.
+In an agent, the redirect collapses into a single message. The agent texts the link, the user signs in once, and `resolveMessageIdentity` matches them by phone on every turn after that — no sec[...]
 
 ## Building with an agent?
 
-This repo is agent-readable. Point a coding agent at [`llms.txt`](./llms.txt) for the whole integration in one file, or drop [`SKILL.md`](./SKILL.md) into its skills — it will install `configure`, wire up sign-in, and make the first profile read itself.
+This repo is agent-readable. Point a coding agent at [`llms.txt`](./llms.txt) for the whole integration in one file, or drop [`SKILL.md`](./SKILL.md) into its skills — it will install `configur[...]
 
 ## Links
 
