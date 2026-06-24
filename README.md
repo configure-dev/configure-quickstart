@@ -23,9 +23,7 @@
 
 ---
 
-**Install one package and your agent is personalized from the first message** — the same user recognized across iMessage, the web, and any channel at once, and monetized automatically. Built for agent developers, starting with Photon.
-
-Configure is a user-owned system of record for agents. It recognizes the same user across agents and gives each agent user-approved context via API or tool call. Users approve and verify without leaving the flow — no new accounts, no re-onboarding, no reauthorizing every app.
+Install one package and your agent recognizes the user from the first message — across every channel, monetized automatically.
 
 Two complete, copy-paste examples — each is the whole integration:
 
