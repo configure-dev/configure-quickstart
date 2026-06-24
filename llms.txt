@@ -1,0 +1,34 @@
+# Configure — Sign in with Configure
+
+Configure is the identity and personalization layer for AI agents. A user brings one Memory Profile — identity, preferences, connected tools, and memories — into any product that integrates the SDK. No new accounts, no re-onboarding, no reauthorizing connected services.
+
+This repo is the minimal integration: show the user a hosted link, get a token back, read their profile.
+
+## Instructions for AI agents
+
+- To integrate: install `configure`, run `npx configure setup`, add Sign in with Configure, then make one `profile.read()` call.
+- Use the hosted sign-in link. Never build a raw phone-OTP flow — Configure's page handles verification and consent.
+- `sk_` keys are server-side only. `pk_` keys are browser-safe and only build the link. The model never sees raw tokens or user IDs.
+- Web apps: `signInUrl` → `exchangeSignInCode` (server) → `profile.read`.
+- Message agents (iMessage / SMS / Photon-Spectrum): deliver the same link in a message and recognize returning users with `resolveMessageIdentity`.
+- Full skill: ./SKILL.md (hosted at https://configure.dev/skill.md)
+
+## Default path
+
+1. `npm install configure` and `npx configure setup` — writes `CONFIGURE_API_KEY`, `CONFIGURE_PUBLISHABLE_KEY`, `CONFIGURE_AGENT` to `.env`.
+2. Build the link: `configure.auth.signInUrl({ publishableKey, returnTo })`.
+3. Exchange the returned code server-side: `configure.auth.exchangeSignInCode(code)` → `{ token }`.
+4. Read the profile: `configure.profile({ token }).read()`.
+5. Use the profile in a personalized response.
+
+## Examples in this repo
+
+- `web/` — a "Continue with Configure" button → redirect → exchange → profile read. The whole server is one `personalize()` call.
+- `message-agent/` — a Spectrum/iMessage agent that recognizes returning users by phone.
+
+## Docs
+
+- Quick start: https://docs.configure.dev/getting-started/quick-start.md
+- Continue with Configure / OAuth SSO: https://docs.configure.dev/guides/oauth-sso.md
+- Message-Agent SSO: https://docs.configure.dev/guides/message-agent-sso.md
+- Full docs index: https://docs.configure.dev/llms.txt

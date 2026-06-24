@@ -1,54 +1,25 @@
 import "dotenv/config";
-import express, { type Request, type Response } from "express";
-import { Configure } from "configure";
+import express from "express";
+import { personalize } from "./personalize.js";
 
 const PORT = Number(process.env.PORT ?? 4000);
-const BASE_URL = process.env.BASE_URL ?? `http://localhost:${PORT}`;
-
-// The secret key (sk_) stays here, on the server. The browser never sees it.
-const configure = new Configure({
-  apiKey: requireEnv("CONFIGURE_API_KEY"),
-  agent: requireEnv("CONFIGURE_AGENT"),
-});
-
 const app = express();
 app.use(express.static("public"));
 
-// Step 1 — send the user to Configure's hosted sign-in, then back to /callback.
-// signInUrl only needs the publishable key, so this link is safe to expose.
-app.get("/login", (_req: Request, res: Response) => {
-  const url = configure.auth.signInUrl({
-    publishableKey: requireEnv("CONFIGURE_PUBLISHABLE_KEY"),
-    returnTo: `${BASE_URL}/callback`,
-    displayName: "Configure Quickstart",
-  });
-  res.redirect(url);
-});
-
-// Step 2 — Configure redirects back with a one-time code. Trade it for a token
-// and read the profile. Both calls use the secret key and happen server-side.
-app.get("/callback", async (req: Request, res: Response) => {
-  const code = typeof req.query.code === "string" ? req.query.code : "";
-  if (!code) {
-    res.status(400).send("Missing sign-in code.");
-    return;
-  }
-
-  try {
-    const { token, userId } = await configure.auth.exchangeSignInCode(code);
-    const profile = await configure.profile({ token }).read();
+// The entire Sign-in-with-Configure flow is one call. You give it your keys and
+// say what to do once a user signs in; personalize() handles the link, the code
+// exchange, and the profile read. The secret key never leaves the server.
+personalize(app, {
+  apiKey: requireEnv("CONFIGURE_API_KEY"),                  // sk_ — stays on the server
+  publishableKey: requireEnv("CONFIGURE_PUBLISHABLE_KEY"),  // pk_ — safe in the browser
+  agent: requireEnv("CONFIGURE_AGENT"),
+  baseUrl: process.env.BASE_URL ?? `http://localhost:${PORT}`,
+  onSignedIn: ({ profile, userId }, res) => {
     res.type("html").send(successPage(userId, profile));
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "unknown error";
-    res.status(500).send(`Sign-in failed: ${escapeHtml(message)}`);
-  }
+  },
 });
 
-app.listen(PORT, async () => {
-  // One-time: allowlist this callback so Configure will redirect back to it.
-  await configure.auth.allowSignInReturnTo(`${BASE_URL}/callback`).catch(() => undefined);
-  console.log(`▸ Configure quickstart running at ${BASE_URL}`);
-});
+app.listen(PORT, () => console.log(`▸ Configure quickstart running at http://localhost:${PORT}`));
 
 function requireEnv(name: string): string {
   const value = process.env[name];

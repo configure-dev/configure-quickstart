@@ -1,15 +1,14 @@
 <p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="./assets/configure-brandmark-white.svg">
-    <img alt="Configure" src="./assets/configure-brandmark-grey.svg" height="56">
-  </picture>
+  <a href="https://configure.dev" target="_blank" rel="noopener noreferrer">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="./assets/configure-brandmark-white.svg">
+      <img alt="Configure" src="./assets/configure-brandmark-grey.svg" height="56">
+    </picture>
+  </a>
 </p>
 
-<h1 align="center">Configure Quickstart</h1>
-
 <p align="center">
-  <b>Personalization infrastructure for agents.</b><br/>
-  Add <b>“Sign in with Configure”</b> to any app or agent — and know who the user is from the very first message.
+  Personalization and identity infrastructure for AI agents.
 </p>
 
 <p align="center">
@@ -24,37 +23,54 @@
 
 ---
 
-## What this is
+"Sign in with Configure" lets a user prove who they are to your agent without you ever touching a password, an OTP, or an OAuth token. You show the user a hosted link; they verify their phone and grant consent on Configure's page; you get back a token and read their profile.
 
-Two tiny, complete examples. Each is the **entire** Configure integration — pick one, copy it, ship it.
+This repo has two complete, copy-pasteable examples. Each one is the whole integration.
 
-| Example | What it shows | |
-| :-- | :-- | :-- |
-| **[`web/`](./web)** | A “Continue with Configure” button → the user’s profile, in ~40 lines | **flagship** |
-| **[`message-agent/`](./message-agent)** | An iMessage / SMS agent that recognizes the user silently by phone | Photon / Spectrum |
+| Example | What it shows |
+| :-- | :-- |
+| [`web/`](./web) | A "Continue with Configure" button that redirects, exchanges a code, and reads the profile. |
+| [`message-agent/`](./message-agent) | An iMessage agent that recognizes returning users by phone with `resolveMessageIdentity`. |
 
-## The whole idea: it’s just a link
+## Install
 
-Configure does the hard, scary parts — phone verification, consent, connected accounts — on **its own hosted page**. You send a link, you get back a token, you read the profile. You never touch an OTP or an OAuth token.
-
-```ts
-import { Configure } from "configure";
-
-const configure = new Configure({ apiKey, agent });
-
-// 1. Build the hosted sign-in link (publishable key — safe in the browser).
-const url = configure.auth.signInUrl({ publishableKey, returnTo });
-
-// 2. The user signs in on Configure’s page and comes back with a one-time code.
-
-// 3. Trade the code for a token — server-side, with your secret key.
-const { token } = await configure.auth.exchangeSignInCode(code);
-
-// 4. Read their profile.
-const profile = await configure.profile({ token }).read();
+```bash
+npm install configure
 ```
 
-The same link works on the **web** (a redirect), in **iMessage** (a text), or in a **voice agent** (read it aloud). One primitive, every channel.
+Requires `configure >= 1.1.7`.
+
+## Usage
+
+The `web/` example wraps the whole flow in one `personalize()` call. You pass your keys and say what to do when a user signs in — nothing in between:
+
+```ts
+import express from "express";
+import { personalize } from "./personalize";
+
+const app = express();
+
+personalize(app, {
+  apiKey: process.env.CONFIGURE_API_KEY!,                  // sk_, server-side
+  publishableKey: process.env.CONFIGURE_PUBLISHABLE_KEY!,  // pk_, browser-safe
+  agent: process.env.CONFIGURE_AGENT!,
+  baseUrl: "http://localhost:4000",
+  onSignedIn: ({ profile, userId }, res) => res.json(profile),
+});
+
+app.listen(4000);
+```
+
+Under the hood, that is four SDK calls — build the link, exchange the code server-side, read the profile:
+
+```ts
+const configure = new Configure({ apiKey, agent });
+const url = configure.auth.signInUrl({ publishableKey, returnTo }); // hosted link (pk_)
+const { token } = await configure.auth.exchangeSignInCode(code);    // exchange (sk_)
+const profile = await configure.profile({ token }).read();         // read
+```
+
+The same hosted link works on the web (a redirect), in iMessage (a text), or in a voice agent (read aloud). One primitive, every channel.
 
 ## Quickstart
 
@@ -62,38 +78,43 @@ The same link works on the **web** (a redirect), in **iMessage** (a text), or in
 git clone https://github.com/configure-dev/configure-quickstart
 cd configure-quickstart/web
 
-cp .env.example .env     # add your keys from the Configure dashboard
+cp .env.example .env     # add your keys
 npm install
 npm run dev              # → http://localhost:4000
 ```
 
-Get your keys with `npx configure setup`, or from [the dashboard](https://configure.dev).
+Open the page, click **Continue with Configure**, and you land on a page showing the profile your server just read. Get your keys with `npx configure setup` or from the [dashboard](https://configure.dev).
 
-## Two keys — and the one rule that matters
+## Keys
 
-| Key | Lives | Does |
+Configure uses two keys with different reach. Getting this split right is the entire security model.
+
+| Variable | Prefix | Where it lives |
 | :-- | :-- | :-- |
-| `CONFIGURE_API_KEY` (`sk_`) | **server only** | exchange the code, read profiles — full power |
-| `CONFIGURE_PUBLISHABLE_KEY` (`pk_`) | browser-safe | build the sign-in link |
+| `CONFIGURE_API_KEY` | `sk_` | Server only. Exchanges the code and reads profiles. |
+| `CONFIGURE_PUBLISHABLE_KEY` | `pk_` | Browser-safe. Builds the sign-in link. |
+| `CONFIGURE_AGENT` | — | Your agent handle in Configure. |
 
-> Your **secret key never leaves your server.** Every sensitive call happens on the backend; the user only ever sees Configure’s hosted page. This is the entire security model.
+The secret key never leaves your server. The browser only ever holds the publishable key and a one-time code; the token and every profile read stay on the backend.
 
 ## How it works
 
 ```
   Browser                         Your server (sk_)              Configure (hosted)
   ───────                         ─────────────────              ──────────────────
-  [Continue with Configure] ─────────▶ /login ──── signInUrl() ─────▶ sign-in.me
-                                                                      phone + consent
-  show profile  ◀──── profile.read() ◀── exchangeSignInCode(code) ◀── redirect ?code=
+  Continue with Configure ───────────▶ /login ──── signInUrl() ──────▶ phone + consent
+                                                                       │
+  show profile  ◀──── profile.read() ◀── exchangeSignInCode(code) ◀────┘ redirect ?code=
 ```
 
-The browser only ever holds the publishable key and a one-time code. The token and every profile read stay on your server.
+In an agent, the redirect collapses into a single message. The agent texts the link, the user signs in once, and `resolveMessageIdentity` matches them by phone on every turn after that — no second sign-in. See [`message-agent/`](./message-agent) for the full loop.
 
-## Learn more
+## Building with an agent?
 
-- **Docs** — https://docs.configure.dev
-- **Message-agent SSO guide** — https://docs.configure.dev/guides/message-agent-sso
-- **npm** — https://www.npmjs.com/package/configure
+This repo is agent-readable. Point a coding agent at [`llms.txt`](./llms.txt) for the whole integration in one file, or drop [`SKILL.md`](./SKILL.md) into its skills — it will install `configure`, wire up sign-in, and make the first profile read itself.
 
-<p align="center"><sub>Built with <a href="https://configure.dev">Configure</a> — the identity layer for the agentic internet.</sub></p>
+## Links
+
+- [Documentation](https://docs.configure.dev)
+- [Message-agent SSO guide](https://docs.configure.dev/guides/message-agent-sso)
+- [`configure` on npm](https://www.npmjs.com/package/configure)
