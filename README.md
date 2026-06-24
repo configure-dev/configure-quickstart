@@ -8,7 +8,7 @@
 </p>
 
 <p align="center">
-  Personalization and identity infrastructure for AI agents.
+  Easily integratable personalization for agent developers.
 </p>
 
 <p align="center">
@@ -23,9 +23,11 @@
 
 ---
 
-"Sign in with Configure" lets a user prove who they are to your agent without you ever touching a password, an OTP, or an OAuth token. You show the user a hosted link; they verify their phone and grant consent on Configure's page; you get back a token and read their profile.
+**Install one package. Your agent is personalized from the first message** — it knows the user, works over iMessage and other channels, and is monetized automatically. Built for agent developers, starting with Photon.
 
-This repo has two complete, copy-pasteable examples. Each one is the whole integration.
+Under the hood it's "Sign in with Configure": you show the user a hosted link, they verify and consent on Configure's page, and you get back a token to read their profile. No passwords, OTPs, or OAuth in your code.
+
+Two complete, copy-paste examples — each is the whole integration:
 
 | Example | What it shows |
 | :-- | :-- |
