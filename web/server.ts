@@ -6,6 +6,9 @@ const PORT = Number(process.env.PORT ?? 4000);
 const app = express();
 app.use(express.static("public"));
 
+// The animated walkthrough. Standalone page — no keys or SDK needed to view it.
+app.get("/demo", (_req, res) => res.redirect("/demo.html"));
+
 // The entire Sign-in-with-Configure flow is one call. You give it your keys and
 // say what to do once a user signs in; personalize() handles the link, the code
 // exchange, and the profile read. The secret key never leaves the server.

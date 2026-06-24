@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import type { Express, Request, Response } from "express";
 import { Configure } from "configure";
 
@@ -9,6 +10,8 @@ import { Configure } from "configure";
 //
 // This helper lives in the example to keep it transparent. It is a candidate to
 // move into the `configure` SDK itself as a framework adapter.
+
+const STATE_COOKIE = "configure_state";
 
 export interface PersonalizeOptions {
   /** Secret key (sk_). Server-side only. */
@@ -36,24 +39,37 @@ export const personalize = (app: Express, options: PersonalizeOptions): Configur
   const callbackPath = options.callbackPath ?? "/callback";
   const returnTo = `${options.baseUrl}${callbackPath}`;
 
-  // Start sign-in: redirect to the hosted page. Only the publishable key is used.
+  // Start sign-in. A one-time `state` is minted, kept in an httpOnly cookie, and
+  // echoed back on the callback — this is the CSRF guard for the OAuth flow.
   app.get(loginPath, (_req: Request, res: Response) => {
+    const state = randomUUID();
+    res.setHeader("Set-Cookie", `${STATE_COOKIE}=${state}; HttpOnly; Path=/; Max-Age=600; SameSite=Lax`);
     res.redirect(
       configure.auth.signInUrl({
         publishableKey: options.publishableKey,
         returnTo,
+        state,
         displayName: options.agent,
       }),
     );
   });
 
-  // Finish sign-in: exchange the one-time code (sk_) and read the profile.
+  // Finish sign-in: verify the state, exchange the one-time code (sk_), read the profile.
   app.get(callbackPath, async (req: Request, res: Response) => {
     const code = typeof req.query.code === "string" ? req.query.code : "";
+    const state = typeof req.query.state === "string" ? req.query.state : "";
+    const expectedState = readCookie(req, STATE_COOKIE);
+    res.setHeader("Set-Cookie", `${STATE_COOKIE}=; HttpOnly; Path=/; Max-Age=0; SameSite=Lax`);
+
     if (!code) {
       res.status(400).send("Missing sign-in code.");
       return;
     }
+    if (!state || state !== expectedState) {
+      res.status(400).send("Invalid sign-in state.");
+      return;
+    }
+
     try {
       const { token, userId } = await configure.auth.exchangeSignInCode(code);
       const profile = await configure.profile({ token }).read();
@@ -69,3 +85,12 @@ export const personalize = (app: Express, options: PersonalizeOptions): Configur
 
   return configure;
 };
+
+function readCookie(req: Request, name: string): string {
+  const header = req.headers.cookie ?? "";
+  for (const part of header.split(";")) {
+    const [key, ...rest] = part.trim().split("=");
+    if (key === name) return rest.join("=");
+  }
+  return "";
+}

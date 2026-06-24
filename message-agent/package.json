@@ -4,6 +4,12 @@
   "private": true,
   "type": "module",
   "description": "An iMessage/SMS agent that recognizes the user by phone with Configure.",
+  "license": "MIT",
+  "author": "Configure",
+  "homepage": "https://configure.dev",
+  "repository": { "type": "git", "url": "https://github.com/configure-dev/configure-quickstart.git", "directory": "message-agent" },
+  "engines": { "node": ">=18" },
+  "keywords": ["configure", "personalization", "agents", "imessage", "spectrum", "photon"],
   "scripts": {
     "dev": "tsx watch agent.ts",
     "start": "tsx agent.ts",

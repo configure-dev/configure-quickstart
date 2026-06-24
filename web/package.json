@@ -4,6 +4,12 @@
   "private": true,
   "type": "module",
   "description": "Continue with Configure — minimal web SSO example.",
+  "license": "MIT",
+  "author": "Configure",
+  "homepage": "https://configure.dev",
+  "repository": { "type": "git", "url": "https://github.com/configure-dev/configure-quickstart.git", "directory": "web" },
+  "engines": { "node": ">=18" },
+  "keywords": ["configure", "sso", "sign-in-with-configure", "personalization", "agents"],
   "scripts": {
     "dev": "tsx watch server.ts",
     "start": "tsx server.ts",

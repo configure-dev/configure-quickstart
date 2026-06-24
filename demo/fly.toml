@@ -1,0 +1,20 @@
+# Configure demo — a tiny, cheap static site on Fly.
+# Deploy from the repo root:
+#   fly apps create configure-demo            # one time
+#   fly deploy --config demo/fly.toml --dockerfile demo/Dockerfile
+# Custom domain (uses your *.configure.dev wildcard / a CNAME to the .fly.dev host):
+#   fly certs add demo.configure.dev --config demo/fly.toml
+app = "configure-demo"
+primary_region = "sjc"
+
+[http_service]
+  internal_port = 80
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 0
+  processes = ["app"]
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "256mb"

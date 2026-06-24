@@ -1,0 +1,361 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Sign in with Configure</title>
+    <style>
+      :root {
+        --canvas: #f5f5f4; --card: #ffffff; --ink: #1f2328; --muted: #6f7478;
+        --hair: rgba(0,0,0,0.08); --blue: #0071e3; --green: #34c759; --bubble: #f0f0ee; --chip: #f6f6f4;
+        font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Segoe UI", sans-serif;
+      }
+      * { box-sizing: border-box; }
+      html, body { margin: 0; height: 100%; background: var(--canvas); color: var(--ink); overflow: hidden; -webkit-font-smoothing: antialiased; }
+      .stage { position: fixed; inset: 0; display: grid; place-items: center; }
+      .glow { position: absolute; width: 620px; height: 620px; border-radius: 50%; background: radial-gradient(circle, rgba(0,113,227,0.10), rgba(0,113,227,0) 62%); opacity: 0; pointer-events: none; }
+      .viewport { display: grid; place-items: center; gap: 24px; }
+      .card { position: relative; width: 440px; height: 430px; background: var(--card); border: 1px solid var(--hair); border-radius: 26px; box-shadow: 0 20px 64px rgba(0,0,0,0.10), 0 1px 0 rgba(0,0,0,0.02); overflow: hidden; will-change: transform; }
+      @media (max-width: 480px) { .card { width: min(92vw, 440px); height: 440px; } }
+      .scene { position: absolute; inset: 0; display: none; align-content: center; justify-items: center; text-align: center; padding: 32px 28px; gap: 13px; }
+      .lockup { height: 24px; } .lockup img { height: 100%; display: block; }
+      .eyebrow { font-size: 12px; letter-spacing: 0.05em; text-transform: uppercase; color: var(--muted); }
+      h2 { font-size: 24px; font-weight: 600; letter-spacing: -0.02em; margin: 0; line-height: 1.2; }
+      .sub { font-size: 14.5px; color: var(--muted); margin: 0; line-height: 1.5; max-width: 330px; }
+      .fine { font-size: 12.5px; color: var(--muted); margin: 2px 0 0; }
+      .btn { display: inline-flex; align-items: center; justify-content: center; gap: 9px; min-height: 46px; padding: 12px 22px; border-radius: 13px; border: none; background: var(--ink); color: #fff; font: inherit; font-size: 15px; font-weight: 550; cursor: pointer; transition: filter .15s ease, transform .1s ease; }
+      .btn:hover { filter: brightness(1.12); } .btn:active { transform: scale(0.97); }
+      .btn .g { width: 18px; height: 18px; object-fit: contain; }
+      .btn.ghost { background: transparent; color: var(--ink); border: 1px solid var(--hair); }
+      .link { font: inherit; font-size: 14px; color: var(--blue); background: none; border: none; cursor: pointer; padding: 8px; }
+
+      .chat { display: grid; gap: 10px; width: 100%; }
+      .bubble { max-width: 84%; padding: 11px 15px; border-radius: 18px; font-size: 15px; line-height: 1.45; text-align: left; }
+      .bubble.user { justify-self: end; background: var(--blue); color: #fff; border-bottom-right-radius: 6px; }
+      .bubble.agent { justify-self: start; background: var(--bubble); color: var(--ink); border-bottom-left-radius: 6px; }
+      .bubble.agent .hl { background: linear-gradient(transparent 62%, rgba(0,113,227,0.16) 0); font-weight: 600; }
+
+      /* phone */
+      .field { width: 100%; max-width: 320px; min-height: 54px; border: 1.5px solid var(--blue); border-radius: 14px; display: flex; align-items: center; padding: 0 16px; font-size: 18px; background: #fff; box-shadow: 0 0 0 4px rgba(0,113,227,0.10); }
+      .field .lab { color: var(--muted); margin-right: 8px; }
+      .field #phoneNum { letter-spacing: 0.01em; }
+      .caret { display: inline-block; width: 2px; height: 22px; background: var(--blue); margin-left: 2px; vertical-align: -5px; animation: blink 1.05s step-end infinite; }
+      @keyframes blink { 50% { opacity: 0; } }
+
+      /* recognize */
+      .avatar { width: 84px; height: 84px; border-radius: 50%; object-fit: cover; box-shadow: 0 6px 22px rgba(0,0,0,0.16); }
+
+      /* integrations */
+      .rows { width: 100%; max-width: 334px; display: grid; gap: 9px; }
+      .row { display: flex; align-items: center; gap: 12px; padding: 11px 13px; border: 1px solid var(--hair); border-radius: 14px; background: #fcfcfc; cursor: pointer; transition: background .2s ease, border-color .2s ease; }
+      .row:hover { border-color: rgba(0,0,0,0.16); }
+      .ic { width: 34px; height: 34px; border-radius: 9px; display: grid; place-items: center; background: var(--chip); border: 1px solid var(--hair); flex: none; }
+      .ic img { width: 20px; height: 20px; object-fit: contain; }
+      .txt { text-align: left; flex: 1; }
+      .nm { font-size: 15px; font-weight: 500; display: flex; align-items: center; gap: 7px; }
+      .tag { font-size: 10.5px; font-weight: 600; color: var(--green); background: rgba(52,199,89,0.12); padding: 1px 7px; border-radius: 999px; opacity: 0; }
+      .meta { font-size: 12px; color: var(--muted); margin-top: 1px; }
+      .sw { width: 44px; height: 27px; border-radius: 999px; background: #e3e3e1; position: relative; flex: none; transition: background .2s ease; }
+      .sw .kn { position: absolute; top: 3px; left: 3px; width: 21px; height: 21px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.2); transition: transform .2s cubic-bezier(.16,1,.3,1); }
+      .sw.on { background: var(--green); } .sw.on .kn { transform: translateX(17px); }
+
+      /* reading */
+      .reading { display: grid; gap: 15px; width: 100%; max-width: 300px; justify-items: start; }
+      .stat { display: flex; align-items: center; gap: 11px; font-size: 16px; opacity: 0; }
+      .stat .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--blue); }
+      .ck { color: var(--green); font-weight: 700; }
+
+      /* apps gallery */
+      .okrow { display: inline-flex; align-items: center; gap: 8px; color: var(--green); font-weight: 600; font-size: 13px; letter-spacing: 0.06em; text-transform: uppercase; }
+      .okrow .okdot { width: 18px; height: 18px; border-radius: 50%; background: var(--green); color: #fff; display: grid; place-items: center; font-size: 11px; }
+      .gallery { width: calc(100% + 56px); margin: 0 -28px; overflow: hidden; -webkit-mask-image: linear-gradient(90deg, transparent, #000 9%, #000 91%, transparent); mask-image: linear-gradient(90deg, transparent, #000 9%, #000 91%, transparent); }
+      .track { display: flex; gap: 9px; width: max-content; will-change: transform; }
+      .tile { flex: none; display: flex; align-items: center; gap: 8px; padding: 8px 12px; border: 1px solid var(--hair); border-radius: 12px; background: #fcfcfc; }
+      .tlogo { width: 26px; height: 26px; border-radius: 7px; background: var(--chip); display: grid; place-items: center; overflow: hidden; }
+      .tlogo img { width: 18px; height: 18px; object-fit: contain; }
+      .tlogo.ph::after { content: "❀"; color: #d6679a; font-size: 14px; }
+      .tname { font-size: 13.5px; font-weight: 500; white-space: nowrap; }
+      .tile b { color: var(--green); font-size: 12px; }
+      .endrow { display: flex; gap: 10px; align-items: center; margin-top: 4px; }
+
+      #cap { font-size: 17px; font-weight: 500; min-height: 24px; letter-spacing: -0.01em; opacity: 0; text-align: center; padding: 0 20px; max-width: 460px; }
+
+      .topbar { position: fixed; top: 22px; left: 0; right: 0; display: flex; justify-content: center; }
+      #bar { width: 200px; height: 4px; border-radius: 999px; background: rgba(0,0,0,0.08); overflow: hidden; display: flex; gap: 4px; padding: 0; }
+      #bar .seg { flex: 1; background: rgba(0,0,0,0.10); border-radius: 999px; overflow: hidden; }
+      #bar .seg > i { display: block; height: 100%; width: 100%; background: var(--blue); transform: scaleX(0); transform-origin: left; transition: transform .4s cubic-bezier(.16,1,.3,1); }
+      #bar .seg.on > i { transform: scaleX(1); }
+      .brandmark { position: fixed; top: 20px; left: 24px; height: 22px; opacity: 0.9; }
+      #skip { position: fixed; right: 22px; bottom: 20px; font: inherit; font-size: 13px; color: var(--muted); background: none; border: none; cursor: pointer; }
+      #skip:hover { color: var(--ink); }
+    </style>
+  </head>
+  <body>
+    <img class="brandmark" src="/configure-brandmark-grey.svg" alt="Configure" onerror="this.style.display='none'" />
+    <div class="topbar"><div id="bar"></div></div>
+
+    <div class="stage">
+      <div class="glow" id="glow"></div>
+      <div class="viewport">
+        <div class="card" id="card">
+
+          <section class="scene" id="cold">
+            <div class="chat">
+              <div class="bubble user" id="coldQ"></div>
+              <div class="bubble agent" id="coldA" style="opacity:0">I don’t have any context about you yet.</div>
+            </div>
+          </section>
+
+          <section class="scene" id="signin">
+            <div class="lockup"><img src="/configure-lockup.svg" alt="Configure" onerror="this.parentNode.textContent='Configure'" /></div>
+            <h2>Sign in once.</h2>
+            <p class="sub">Verify your phone, and every agent you use can know you, with your consent. No passwords.</p>
+            <button class="btn" id="cwc"><img class="g" src="/configure-brandmark-white.svg" alt="" onerror="this.remove()"> Continue with Configure</button>
+          </section>
+
+          <section class="scene" id="phone">
+            <p class="eyebrow">Your phone is your identity</p>
+            <div class="field"><span class="lab">+1</span><span id="phoneNum"></span><span class="caret" id="caret"></span></div>
+            <button class="btn" id="phoneGo">Verify</button>
+            <p class="fine">One number. No password, no new account.</p>
+          </section>
+
+          <section class="scene" id="recognize">
+            <img class="avatar" src="/logos/samantha.jpg" alt="" onerror="this.style.visibility='hidden'" />
+            <h2 id="hiName">Hi, Samantha.</h2>
+            <p class="sub">Recognized by phone. Welcome back, right where you left off.</p>
+            <button class="btn" id="recogGo">Continue</button>
+          </section>
+
+          <section class="scene" id="integrations">
+            <h2 style="font-size:21px">Add your apps</h2>
+            <div class="rows">
+              <div class="row" data-sw="swGmail"><span class="ic"><img src="/logos/gmail.svg" alt=""></span><span class="txt"><div class="nm">Gmail <span class="tag">added</span></div><div class="meta">recent threads</div></span><span class="sw" id="swGmail"><span class="kn"></span></span></div>
+              <div class="row" data-sw="swCal"><span class="ic"><img src="/logos/gcal.svg" alt=""></span><span class="txt"><div class="nm">Calendar <span class="tag">added</span></div><div class="meta">events &amp; availability</div></span><span class="sw" id="swCal"><span class="kn"></span></span></div>
+              <div class="row" data-sw="swNotion"><span class="ic"><img src="/logos/notion.svg" alt=""></span><span class="txt"><div class="nm">Notion</div><div class="meta">your notes &amp; docs</div></span><span class="sw" id="swNotion"><span class="kn"></span></span></div>
+              <div class="row" data-sw="swDrive"><span class="ic"><img src="/logos/gdrive.svg" alt=""></span><span class="txt"><div class="nm">Drive</div><div class="meta">files, when you want</div></span><span class="sw" id="swDrive"><span class="kn"></span></span></div>
+            </div>
+            <button class="btn" id="intGo">Add &amp; continue</button>
+          </section>
+
+          <section class="scene" id="reading">
+            <div class="reading">
+              <div class="stat" id="st1"><span class="dot"></span><span>Reading your profile</span></div>
+              <div class="stat" id="st2"><span class="dot"></span><span>Reading your calendar</span></div>
+              <div class="stat" id="st3"><span class="dot"></span><span>Reading your inbox</span></div>
+            </div>
+          </section>
+
+          <section class="scene" id="output">
+            <div class="chat">
+              <div class="bubble user">what should I remember for tomorrow?</div>
+              <div class="bubble agent" id="ansA" style="opacity:0"></div>
+            </div>
+            <button class="btn ghost" id="outGo" style="opacity:0">See it in every app →</button>
+          </section>
+
+          <section class="scene" id="apps">
+            <div class="okrow"><span class="okdot">✓</span> Connected</div>
+            <h2 style="font-size:21px">The same you, in every app.</h2>
+            <div class="gallery"><div class="track" id="track1"></div></div>
+            <div class="gallery"><div class="track" id="track2"></div></div>
+            <div class="endrow">
+              <button class="btn" id="backSrc">Done</button>
+              <button class="link" id="replay">Replay ↻</button>
+            </div>
+          </section>
+
+        </div>
+        <div id="cap"></div>
+      </div>
+    </div>
+
+    <button id="skip">skip ›</button>
+
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/gsap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/CustomEase.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/SplitText.min.js"></script>
+    <script>
+      const $ = (s) => document.querySelector(s);
+      const cap = $("#cap");
+      const hasCustomEase = typeof CustomEase !== "undefined";
+      const hasSplit = typeof SplitText !== "undefined";
+      const plugins = [hasCustomEase && CustomEase, hasSplit && SplitText].filter(Boolean);
+      if (plugins.length) gsap.registerPlugin(...plugins);
+      const E = hasCustomEase ? CustomEase.create("brand", "0.16, 1, 0.3, 1") : "expo.out";
+      const EX = "power2.in";
+      const WATERY = "elastic.out(1, 0.6)";
+
+      // ---- return-to-source (?source=github / ?return_to=URL) ---------------
+      const params = new URLSearchParams(location.search);
+      const STORY = params.get("mode") === "story";   // ?mode=story = full auto-play cinematic (for pitches)
+      function returnTarget() {
+        const rt = params.get("return_to") || params.get("returnTo");
+        const src = (params.get("source") || params.get("from") || "").toLowerCase();
+        if (rt) { try { const u = new URL(rt); return { label: `Back to ${u.hostname.replace(/^www\./, "")}`, href: rt }; } catch (e) {} }
+        if (src === "github" || src === "repo") return { label: "← Back to the repo", href: "https://github.com/configure-dev/configure-quickstart" };
+        if (src === "docs") return { label: "← Back to the docs", href: "https://docs.configure.dev" };
+        if (src) return { label: `← Back to ${src}`, href: "#" };
+        return { label: "Done", href: null };
+      }
+
+      // ---- progress segments -------------------------------------------------
+      const STEPS = ["cold", "signin", "phone", "recognize", "integrations", "reading", "output", "apps"];
+      $("#bar").innerHTML = STEPS.map(() => '<div class="seg"><i></i></div>').join("");
+      const segs = [...document.querySelectorAll("#bar .seg")];
+      function markProgress(id) { const idx = STEPS.indexOf(id); segs.forEach((s, i) => s.classList.toggle("on", i <= idx)); }
+
+      // ---- gallery -----------------------------------------------------------
+      const AGENTS = [
+        ["imessage", "iMessage"], ["chatgpt", "ChatGPT"], ["claude", "Claude"],
+        ["cursor", "Cursor"], ["perplexity", "Perplexity"], ["gemini", "Gemini"],
+        ["dominos", "Domino’s"], ["spotify", "Spotify"], ["discord", "Discord"],
+        ["__companion", "HiWaifu"],
+      ];
+      const tile = ([slug, name]) => {
+        const img = slug === "__companion"
+          ? `<img src="/logos/waifu.png" alt="" onerror="this.onerror=null;this.src='/logos/hiwaifu.png';this.onerror=function(){this.style.display='none';this.parentNode.classList.add('ph')};">`
+          : `<img src="/logos/${slug}.svg" alt="" onerror="this.style.display='none';this.parentNode.classList.add('ph')">`;
+        return `<div class="tile"><span class="tlogo">${img}</span><span class="tname">${name}</span><b>✓</b></div>`;
+      };
+      $("#track1").innerHTML = (AGENTS.map(tile).join("")).repeat(2);
+      $("#track2").innerHTML = ([...AGENTS].reverse().map(tile).join("")).repeat(2);
+
+      // ---- helpers -----------------------------------------------------------
+      function type(el, text, cps = 24) {
+        const o = { i: 0 }; el.textContent = "";
+        return gsap.to(o, { i: text.length, duration: text.length / cps, ease: "none", onUpdate: () => { el.textContent = text.slice(0, Math.round(o.i)); } });
+      }
+      let capSplit = null;
+      function caption(text) {
+        gsap.killTweensOf(cap);
+        const tl = gsap.timeline();
+        tl.to(cap, { autoAlpha: 0, duration: 0.2, ease: EX });
+        tl.add(() => {
+          if (capSplit) { capSplit.revert(); capSplit = null; }
+          cap.textContent = text || "";
+          gsap.set(cap, { autoAlpha: text ? 1 : 0 });
+          if (!text) return;
+          if (hasSplit) { capSplit = SplitText.create(cap, { type: "words", aria: "none" }); gsap.from(capSplit.words, { yPercent: 60, autoAlpha: 0, duration: 0.6, stagger: 0.045, ease: E }); }
+          else { gsap.from(cap, { autoAlpha: 0, y: 8, duration: 0.5, ease: E }); }
+        });
+      }
+      function splitInto(sel) { if (hasSplit) { const s = SplitText.create(sel, { type: "words", aria: "none" }); gsap.from(s.words, { yPercent: 60, autoAlpha: 0, duration: 0.6, stagger: 0.05, ease: E }); } }
+      function flipOn(id, withTag) {
+        const sw = document.getElementById(id);
+        sw.classList.add("on");
+        if (withTag) { const tag = sw.closest(".row").querySelector(".tag"); if (tag) gsap.to(tag, { autoAlpha: 1, duration: 0.3, ease: E }); }
+      }
+
+      // ---- crossfade scene controller (NO white frames) ---------------------
+      let cur = null, autoTimer = null;
+      function show(id) {
+        if (autoTimer) { autoTimer.kill(); autoTimer = null; }
+        const inc = document.getElementById(id), out = cur;
+        gsap.killTweensOf(inc);
+        gsap.set(inc, { display: "grid", autoAlpha: 0, y: 12 });
+        gsap.to(inc, { autoAlpha: 1, y: 0, duration: 0.55, ease: E });
+        if (out && out !== inc) gsap.to(out, { autoAlpha: 0, y: -8, duration: 0.4, ease: EX, onComplete: () => gsap.set(out, { display: "none" }) });
+        cur = inc;
+        markProgress(id);
+        step(id);
+      }
+      function wateryPop() { gsap.fromTo("#card", { scale: 0.9 }, { scale: 1, duration: 1.0, ease: WATERY }); }
+      function autoNext(next, delay) { if (STORY) autoTimer = gsap.delayedCall(delay, () => show(next)); }
+
+      // ---- per-step animation + behavior ------------------------------------
+      function step(id) {
+        if (id === "cold") {
+          caption("This is every new agent.");
+          const tl = gsap.timeline();
+          tl.add(type($("#coldQ"), "what should I remember for tomorrow?"), "+=0.3")
+            .to("#coldA", { opacity: 1, duration: 0.5, ease: E }, "+=0.3")
+            .add(() => caption("Agents can’t help you if they don’t know you."), "+=0.3")
+            .add(() => { autoNext("signin", 1.7); }, "+=0.1");
+        }
+        else if (id === "signin") { caption(""); wateryPop(); gsap.from("#signin > *", { autoAlpha: 0, y: 12, stagger: 0.08, duration: 0.55, ease: E, delay: 0.1 }); autoNext("phone", 2.0); }
+        else if (id === "phone") {
+          caption("Your phone is your identity. No password.");
+          $("#caret").style.display = "inline-block";
+          gsap.from("#phone > *", { autoAlpha: 0, y: 12, stagger: 0.08, duration: 0.5, ease: E });
+          gsap.delayedCall(0.35, () => type($("#phoneNum"), " (415) 555-0134", 17));
+          autoNext("recognize", 2.8);
+        }
+        else if (id === "recognize") { caption("Recognized instantly. Welcome back."); gsap.from("#recognize .avatar", { scale: 0.8, autoAlpha: 0, duration: 0.6, ease: "back.out(2)" }); splitInto("#hiName"); gsap.from("#recognize .sub, #recogGo", { autoAlpha: 0, y: 10, stagger: 0.08, duration: 0.5, ease: E, delay: 0.15 }); autoNext("integrations", 2.2); }
+        else if (id === "integrations") {
+          caption("Add all your apps in one place.");
+          gsap.from(".row", { autoAlpha: 0, y: 12, stagger: 0.08, duration: 0.5, ease: E });
+          gsap.from("#intGo", { autoAlpha: 0, y: 10, duration: 0.5, ease: E, delay: 0.45 });
+          gsap.delayedCall(0.7, () => flipOn("swGmail", true));
+          gsap.delayedCall(1.0, () => flipOn("swCal", true));
+          autoNext("reading", 2.6);
+        }
+        else if (id === "reading") {
+          caption("");
+          gsap.to("#glow", { opacity: 1, duration: 0.9, ease: E });
+          const tl = gsap.timeline();
+          tl.to("#st1", { autoAlpha: 1, duration: 0.45, ease: E }, 0.1)
+            .add(() => $("#st1 span:last-child").innerHTML = "Read your profile &nbsp;<span class='ck'>✓</span>", 1.0)
+            .to("#st2", { autoAlpha: 1, duration: 0.45, ease: E }, 1.1)
+            .add(() => $("#st2 span:last-child").innerHTML = "Read your calendar &nbsp;<span class='ck'>✓</span>", 2.0)
+            .to("#st3", { autoAlpha: 1, duration: 0.45, ease: E }, 2.1)
+            .add(() => $("#st3 span:last-child").innerHTML = "Read your inbox &nbsp;<span class='ck'>✓</span>", 3.0)
+            .add(() => { autoTimer = gsap.delayedCall(0.6, () => show("output")); });
+        }
+        else if (id === "output") {
+          gsap.to("#glow", { opacity: 0, duration: 0.8, ease: EX });
+          caption("This is the output. Your agent, now useful.");
+          $("#ansA").innerHTML = "Tomorrow you’ve got a <span class='hl'>piano lesson at 10:00</span> at Riya’s Studio, and <span class='hl'>Thailand starts Oct 1</span>. I’d pack this week. Connor also emailed about the Kyoto shortlist; want me to draft a reply?";
+          gsap.fromTo("#ansA", { autoAlpha: 0, y: 8 }, { autoAlpha: 1, y: 0, duration: 0.6, ease: E, delay: 0.15 });
+          gsap.to("#outGo", { autoAlpha: 1, duration: 0.5, ease: E, delay: 1.3 });
+          autoNext("apps", 3.5);
+        }
+        else if (id === "apps") {
+          caption("And it works in every app you use.");
+          gsap.from("#apps .okrow, #apps h2", { autoAlpha: 0, y: 10, stagger: 0.08, duration: 0.5, ease: E });
+          gsap.from(".gallery", { autoAlpha: 0, duration: 0.6, stagger: 0.12, ease: E, delay: 0.1 });
+          startMarquee();
+          const t = returnTarget();
+          const b = $("#backSrc"); b.textContent = t.label;
+          gsap.from("#apps .endrow", { autoAlpha: 0, y: 8, duration: 0.5, ease: E, delay: 0.5 });
+        }
+      }
+
+      let marquee = null;
+      function startMarquee() {
+        if (marquee) marquee.kill();
+        marquee = gsap.timeline();
+        marquee.to("#track1", { xPercent: -50, duration: 26, ease: "none", repeat: -1 }, 0);
+        marquee.fromTo("#track2", { xPercent: -50 }, { xPercent: 0, duration: 30, ease: "none", repeat: -1 }, 0);
+      }
+
+      function reset() {
+        if (marquee) { marquee.kill(); marquee = null; }
+        document.querySelectorAll(".sw").forEach((s) => s.classList.remove("on"));
+        document.querySelectorAll(".tag").forEach((t) => gsap.set(t, { autoAlpha: 0 }));
+        ["st1", "st2", "st3"].forEach((s) => gsap.set("#" + s, { autoAlpha: 0 }));
+        gsap.set("#glow", { opacity: 0 });
+        gsap.set([".scene"], { display: "none", clearProps: "transform" });
+        cur = null;
+      }
+
+      // ---- wiring (interactive) ---------------------------------------------
+      gsap.set(".scene", { display: "none", autoAlpha: 0 });
+      $("#cwc").addEventListener("click", () => show("phone"));
+      $("#phoneGo").addEventListener("click", () => show("recognize"));
+      $("#recogGo").addEventListener("click", () => show("integrations"));
+      $("#intGo").addEventListener("click", () => show("reading"));
+      $("#outGo").addEventListener("click", () => show("apps"));
+      // toggles are clickable
+      document.querySelectorAll(".row").forEach((row) => row.addEventListener("click", (e) => {
+        const sw = document.getElementById(row.dataset.sw); sw.classList.toggle("on");
+      }));
+      $("#backSrc").addEventListener("click", () => { const t = returnTarget(); if (t.href) location.href = t.href; });
+      $("#replay").addEventListener("click", () => { reset(); show("cold"); });
+      $("#skip").addEventListener("click", () => { reset(); show("apps"); });
+
+      // start: interactive by default (land on the sign-in card); ?mode=story auto-plays the full cinematic
+      if (STORY) show("cold"); else show("signin");
+    </script>
+  </body>
+</html>
