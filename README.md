@@ -8,7 +8,7 @@
 </p>
 
 <p align="center">
-  Easily integratable personalization for agent developers.
+  Personalization for agents.
 </p>
 
 <p align="center">
@@ -23,9 +23,9 @@
 
 ---
 
-**Install one package. Your agent is personalized from the first message** — it knows the user, works over iMessage and other channels, and is monetized automatically. Built for agent developers, starting with Photon.
+**Install one package and your agent is personalized from the first message** — the same user recognized across iMessage, the web, and any channel at once, and monetized automatically. Built for agent developers, starting with Photon.
 
-Under the hood it's "Sign in with Configure": you show the user a hosted link, they verify and consent on Configure's page, and you get back a token to read their profile. No passwords, OTPs, or OAuth in your code.
+Configure is a user-owned system of record for agents. It recognizes the same user across agents and gives each agent user-approved context via API or tool call. Users approve and verify without leaving the flow — no new accounts, no re-onboarding, no reauthorizing every app.
 
 Two complete, copy-paste examples — each is the whole integration:
 
@@ -72,7 +72,7 @@ const { token } = await configure.auth.exchangeSignInCode(code);    // exchange 
 const profile = await configure.profile({ token }).read();         // read
 ```
 
-The same hosted link works on the web (a redirect), in iMessage (a text), or in a voice agent (read aloud). One primitive, every channel.
+The same hosted link works on the web (a redirect), in iMessage (a text), or in a voice agent (read aloud) — and Configure recognizes the same user across all of them at once. One identity, every channel.
 
 ## Quickstart
 
