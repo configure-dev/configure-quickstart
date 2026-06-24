@@ -40,7 +40,7 @@ import { Configure } from "configure";
 
 const configure = new Configure({ apiKey, agent });
 
-// 1. Build the hosted sign-in link (pk_, safe for the browser).
+// 1. Build the hosted sign-in link (defaults to https://sign-in.me/{agent}).
 const url = configure.auth.signInUrl({ publishableKey, returnTo });
 
 // 2. The user verifies and consents on Configure's page, then returns with a
@@ -53,7 +53,7 @@ const { token } = await configure.auth.exchangeSignInCode(code);
 const profile = await configure.profile({ token }).read();
 ```
 
-For message agents (iMessage / SMS / Photon-Spectrum), deliver the same link in a message and recognize returning users by phone with `configure.auth.resolveMessageIdentity({ externalId, token, phoneCandidates })`.
+For message agents (iMessage / SMS / Photon-Spectrum), deliver the same `sign-in.me` link in a message and recognize returning users by phone with `configure.auth.resolveMessageIdentity({ externalId, token, phoneCandidates })`.
 
 ## Definition of done
 
