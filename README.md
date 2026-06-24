@@ -42,23 +42,18 @@ Requires `configure >= 1.1.7`.
 
 ## Usage
 
-The `web/` example wraps the whole flow in one `personalize()` call. You pass your keys and say what to do when a user signs in — nothing in between:
+The `web/` example wraps the whole flow in one `personalize()` call — no web framework, no routes. You pass your keys and say what to do when a user signs in:
 
 ```ts
-import express from "express";
 import { personalize } from "./personalize";
 
-const app = express();
-
-personalize(app, {
+personalize({
   apiKey: process.env.CONFIGURE_API_KEY!,                  // sk_, server-side
   publishableKey: process.env.CONFIGURE_PUBLISHABLE_KEY!,  // pk_, browser-safe
   agent: process.env.CONFIGURE_AGENT!,
   baseUrl: "http://localhost:4000",
-  onSignedIn: ({ profile, userId }, res) => res.json(profile),
-});
-
-app.listen(4000);
+  onSignedIn: ({ profile }) => profile,   // return HTML or JSON
+}).listen(4000);
 ```
 
 Under the hood, that is four SDK calls — build the link, exchange the code server-side, read the profile:

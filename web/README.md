@@ -1,6 +1,6 @@
 # Web — Continue with Configure
 
-A minimal Express app: a **“Continue with Configure”** button, a hosted sign-in, and the user’s profile back — in one file ([`server.ts`](./server.ts)).
+A minimal Node app — no web framework: a **“Continue with Configure”** button, a hosted sign-in, and the user’s profile back — in one file ([`server.ts`](./server.ts)).
 
 ## Run it
 

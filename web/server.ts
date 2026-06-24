@@ -1,28 +1,19 @@
 import "dotenv/config";
-import express from "express";
 import { personalize } from "./personalize.js";
 
 const PORT = Number(process.env.PORT ?? 4000);
-const app = express();
-app.use(express.static("public"));
-
-// The animated walkthrough. Standalone page — no keys or SDK needed to view it.
-app.get("/demo", (_req, res) => res.redirect("/demo.html"));
 
 // The entire Sign-in-with-Configure flow is one call. You give it your keys and
-// say what to do once a user signs in; personalize() handles the link, the code
-// exchange, and the profile read. The secret key never leaves the server.
-personalize(app, {
+// say what to do once a user signs in; personalize() runs the server, builds the
+// hosted link, exchanges the code, and reads the profile. The secret key never
+// leaves here — no web framework required.
+personalize({
   apiKey: requireEnv("CONFIGURE_API_KEY"),                  // sk_ — stays on the server
   publishableKey: requireEnv("CONFIGURE_PUBLISHABLE_KEY"),  // pk_ — safe in the browser
   agent: requireEnv("CONFIGURE_AGENT"),
   baseUrl: process.env.BASE_URL ?? `http://localhost:${PORT}`,
-  onSignedIn: ({ profile, userId }, res) => {
-    res.type("html").send(successPage(userId, profile));
-  },
-});
-
-app.listen(PORT, () => console.log(`▸ Configure quickstart running at http://localhost:${PORT}`));
+  onSignedIn: ({ profile, userId }) => successPage(userId, profile),
+}).listen(PORT, () => console.log(`▸ Configure quickstart running at http://localhost:${PORT}`));
 
 function requireEnv(name: string): string {
   const value = process.env[name];
