@@ -127,7 +127,12 @@ function send(res: ServerResponse, status: number, contentType: string, body: st
 }
 
 async function serveStatic(res: ServerResponse, root: string, pathname: string): Promise<void> {
-  const requested = pathname === "/" ? "index.html" : decodeURIComponent(pathname).replace(/^\/+/, "");
+  const decodedPathname = safeDecodePathname(pathname);
+  if (decodedPathname === undefined) {
+    return send(res, 400, "text/plain; charset=utf-8", "Bad request");
+  }
+
+  const requested = decodedPathname === "/" ? "index.html" : decodedPathname.replace(/^\/+/, "");
   const filePath = resolve(root, requested);
 
   // Path-traversal guard: never serve anything outside the public root.
@@ -141,5 +146,13 @@ async function serveStatic(res: ServerResponse, root: string, pathname: string):
     res.end(data);
   } catch {
     send(res, 404, "text/plain; charset=utf-8", "Not found");
+  }
+}
+
+function safeDecodePathname(pathname: string): string | undefined {
+  try {
+    return decodeURIComponent(pathname);
+  } catch {
+    return undefined;
   }
 }

@@ -30,7 +30,7 @@ for await (const [space, message] of app.messages) {
   const identity = await configure.auth.resolveMessageIdentity({
     externalId: `spectrum:${subjectKey}`,
     token: saved?.token,
-    phoneCandidates: [message.sender?.phone, space.phone].filter(isNonEmpty),
+    phoneCandidates: [phoneCandidateFromSender(message.sender)].filter(isNonEmpty),
   });
   if (identity.token && identity.token !== saved?.token) {
     store.set(subjectKey, { token: identity.token, userId: identity.userId });
@@ -69,6 +69,20 @@ function isNonEmpty(value: string | undefined | null): value is string {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
+}
+
+function phoneCandidateFromSender(sender: unknown): string | undefined {
+  const address = stringField(sender, "address");
+  if (!address || address.includes("@")) return undefined;
+
+  const digits = address.replace(/[^\d]/g, "");
+  return digits.length >= 8 ? address : undefined;
+}
+
+function stringField(value: unknown, field: string): string | undefined {
+  if (!isRecord(value)) return undefined;
+  const candidate = value[field];
+  return typeof candidate === "string" ? candidate : undefined;
 }
 
 function firstName(profile: unknown): string | null {
