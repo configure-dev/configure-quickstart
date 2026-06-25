@@ -15,10 +15,11 @@ const app = await Spectrum({
 
 const STYLE =
   "You are the assistant behind Configure, demoing the Configure x Photon partnership over iMessage. " +
-  "You're a warm, genuinely helpful guide who is also low-key showing off what Configure does: it gives " +
-  "any agent persistent memory and identity, so it recognizes the same person across every channel. " +
-  "Texting style: SHORT and human — at most two brief messages. If you send two, separate them with a line " +
-  "that is only ---. Never send a wall of text. If a group message clearly isn't for you, reply with exactly [SKIP].";
+  "You're a warm, genuinely helpful guide who is also low-key showing off Configure: it gives any agent " +
+  "persistent memory and identity across every channel. Use your tools to look things up, and to REMEMBER " +
+  "anything new the user tells you about themselves (their name, preferences, what they're working on). " +
+  "Texting style: SHORT and human — at most two brief messages; if you send two, separate them with a line " +
+  "that is only ---. Never send a wall of text. If a group message clearly isn't for you, reply [SKIP].";
 
 personalize(app, {
   apiKey: process.env.CONFIGURE_API_KEY!,
@@ -26,28 +27,57 @@ personalize(app, {
   agent: process.env.CONFIGURE_AGENT!,
   agentPhone: process.env.AGENT_PHONE_NUMBER,
   displayName: "Configure",
-  reply: async ({ text, profile, signInUrl }) => {
-    const known = profileHasData(profile);
-    const system = known
-      ? `${STYLE}\n\nWhat Configure remembers about this user:\n${JSON.stringify(profile, null, 2)}`
-      : `${STYLE}\n\nYou do NOT have a profile for this person yet — never invent facts about them. When ` +
-        `they ask who they are, what you know, or how this works, explain briefly and invite them to load ` +
-        `their Configure profile by tapping this link (send the link as its own message):\n${signInUrl}`;
+  reply: async ({ text, profile, signInUrl, runtime }) => {
+    const system = profileHasData(profile)
+      ? `${STYLE}\n\nWhat Configure already remembers about this user:\n${JSON.stringify(profile, null, 2)}`
+      : `${STYLE}\n\nYou don't have a profile for them yet. When they ask who they are or how this works, ` +
+        `invite them to load it by tapping this link (send it as its own message):\n${signInUrl}`;
 
-    const message = await claude.messages.create({
-      model: "claude-sonnet-4-6",
-      max_tokens: 400,
-      system,
-      messages: [{ role: "user", content: text }],
-    });
+    // Give Claude Configure's read / search / remember tools, and run the tool loop.
+    const tools = runtime.tools() as unknown as Anthropic.Tool[];
+    const messages: Anthropic.MessageParam[] = [{ role: "user", content: text }];
 
-    const out = message.content.map((c) => (c.type === "text" ? c.text : "")).join("").trim();
-    if (!out || out === "[SKIP]") return null; // stay silent
+    for (let hop = 0; hop < 4; hop += 1) {
+      const message = await claude.messages.create({
+        model: "claude-sonnet-4-6",
+        max_tokens: 500,
+        system,
+        tools,
+        messages,
+      });
+      messages.push({ role: "assistant", content: message.content });
 
-    // Up to two natural bursts — personalize() sends them with a human pause between.
-    return out.split(/\n?---\n?/).map((s) => s.trim()).filter(Boolean).slice(0, 2);
+      const toolUses = message.content.filter((c): c is Anthropic.ToolUseBlock => c.type === "tool_use");
+      if (toolUses.length === 0) {
+        const out = message.content.map((c) => (c.type === "text" ? c.text : "")).join("").trim();
+        if (!out || out === "[SKIP]") return null;
+        return out.split(/\n?---\n?/).map((s) => s.trim()).filter(Boolean).slice(0, 2);
+      }
+
+      const toolResults: Anthropic.ToolResultBlockParam[] = await Promise.all(
+        toolUses.map(async (call) => ({
+          type: "tool_result" as const,
+          tool_use_id: call.id,
+          content: safeJson(await runtime.executeTool({ name: call.name, arguments: asRecord(call.input) })),
+        })),
+      );
+      messages.push({ role: "user", content: toolResults });
+    }
+    return null;
   },
 });
+
+function asRecord(value: unknown): Record<string, unknown> {
+  return isRecord(value) ? value : {};
+}
+
+function safeJson(value: unknown): string {
+  try {
+    return JSON.stringify(value);
+  } catch {
+    return String(value);
+  }
+}
 
 function profileHasData(profile: unknown): boolean {
   if (!isRecord(profile) || !isRecord(profile.identity)) return false;
