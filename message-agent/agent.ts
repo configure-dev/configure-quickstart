@@ -1,7 +1,7 @@
 import "dotenv/config";
 import { Spectrum } from "spectrum-ts";
 import { imessage } from "spectrum-ts/providers/imessage";
-import { personalize } from "./personalize.js";
+import { personalize } from "configure/spectrum";
 
 // Spectrum is the transport — it makes your agent reachable over iMessage.
 const app = await Spectrum({

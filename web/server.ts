@@ -1,5 +1,5 @@
 import "dotenv/config";
-import { personalize } from "./personalize.js";
+import { personalize } from "configure/web";
 
 const PORT = Number(process.env.PORT ?? 4000);
 
