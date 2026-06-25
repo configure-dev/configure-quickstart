@@ -7,16 +7,30 @@
   "license": "MIT",
   "author": "Configure",
   "homepage": "https://configure.dev",
-  "repository": { "type": "git", "url": "https://github.com/configure-dev/configure-quickstart.git", "directory": "message-agent" },
-  "engines": { "node": ">=18" },
-  "keywords": ["configure", "personalization", "agents", "imessage", "spectrum", "photon"],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/configure-dev/configure-quickstart.git",
+    "directory": "message-agent"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "keywords": [
+    "configure",
+    "personalization",
+    "agents",
+    "imessage",
+    "spectrum",
+    "photon"
+  ],
   "scripts": {
     "dev": "tsx watch agent.ts",
     "start": "tsx agent.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "configure": "^1.1.8",
+    "@anthropic-ai/sdk": "^0.106.0",
+    "configure": "^1.1.10",
     "dotenv": "^17.0.0",
     "spectrum-ts": "^5.2.0"
   },

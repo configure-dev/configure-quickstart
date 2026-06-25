@@ -1,0 +1,10 @@
+# Always-on Spectrum + Configure agent. No [http_service] — it connects out to
+# Photon and listens, so it just needs to keep running.
+app = "configure-x-photon-agent"
+primary_region = "sjc"
+
+[build]
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "512mb"

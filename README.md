@@ -38,14 +38,14 @@ Two complete, copy-paste examples — each is the whole integration:
 npm install configure
 ```
 
-Requires `configure >= 1.1.7`.
+Requires `configure >= 1.1.9`.
 
 ## Usage
 
-The `web/` example wraps the whole flow in one `personalize()` call — no web framework, no routes. You pass your keys and say what to do when a user signs in:
+**Web** — one `personalize()` call runs the whole sign-in server (no framework, no routes):
 
 ```ts
-import { personalize } from "./personalize";
+import { personalize } from "configure";
 
 personalize({
   apiKey: process.env.CONFIGURE_API_KEY!,                  // sk_, server-side
@@ -55,6 +55,22 @@ personalize({
   onSignedIn: ({ profile }) => profile,   // return HTML or JSON
 }).listen(4000);
 ```
+
+**Message agent** — wrap a [Spectrum](https://github.com/photon-hq/spectrum-ts) iMessage loop: it recognizes the texter by phone, sends the sign-in link in-thread, and hands you their profile.
+
+```ts
+import { personalize } from "configure/spectrum";
+
+personalize(app, {
+  apiKey: process.env.CONFIGURE_API_KEY!,
+  publishableKey: process.env.CONFIGURE_PUBLISHABLE_KEY!,
+  agent: process.env.CONFIGURE_AGENT!,
+  reply: ({ name, linked }) =>
+    linked ? `hey ${name ?? "there"}, what's up?` : `text "connect" to sign in`,
+});
+```
+
+> `personalize` lives at the package root for web; the Spectrum adapter is `configure/spectrum` because it pulls in `spectrum-ts` — so web-only users never install it.
 
 Under the hood, that is four SDK calls — build the link, exchange the code server-side, read the profile:
 
