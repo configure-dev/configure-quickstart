@@ -7,10 +7,10 @@ This repo is the minimal integration: show the user a hosted link, get a token b
 ## Instructions for AI agents
 
 - To integrate: install `configure`, run `npx configure setup`, add Sign in with Configure, then make one `profile.read()` call.
-- Use the hosted sign-in link. Never build a raw phone-OTP flow — Configure's page handles verification and consent.
+- Use the hosted `sign-in.me` link. Never build a raw phone-OTP flow — Configure's page handles verification and consent.
 - `sk_` keys are server-side only. `pk_` keys are browser-safe and only build the link. The model never sees raw tokens or user IDs.
 - Web apps: `signInUrl` → `exchangeSignInCode` (server) → `profile.read`.
-- Message agents (iMessage / SMS / Photon-Spectrum): deliver the same link in a message and recognize returning users with `resolveMessageIdentity`.
+- Message agents (iMessage / SMS / Photon-Spectrum): deliver the `sign-in.me` link in a message and recognize returning users with `resolveMessageIdentity`.
 - Full skill: ./SKILL.md (hosted at https://configure.dev/skill.md)
 
 ## Default path

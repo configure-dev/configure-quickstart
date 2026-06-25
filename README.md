@@ -60,12 +60,12 @@ Under the hood, that is four SDK calls — build the link, exchange the code ser
 
 ```ts
 const configure = new Configure({ apiKey, agent });
-const url = configure.auth.signInUrl({ publishableKey, returnTo }); // hosted link (pk_)
+const url = configure.auth.signInUrl({ publishableKey, returnTo }); // sign-in.me hosted link (pk_)
 const { token } = await configure.auth.exchangeSignInCode(code);    // exchange (sk_)
 const profile = await configure.profile({ token }).read();         // read
 ```
 
-The same hosted link works on the web (a redirect), in iMessage (a text), or in a voice agent (read aloud) — and Configure recognizes the same user across all of them at once. One identity, ever[...]
+The same `sign-in.me` hosted link works on the web (a redirect), in iMessage (a text), or in a voice agent (read aloud) — and Configure recognizes the same user across all of them at once. One identity, everywhere.
 
 ## Quickstart
 
@@ -78,7 +78,7 @@ npm install
 npm run dev              # → http://localhost:4000
 ```
 
-Open the page, click **Continue with Configure**, and you land on a page showing the profile your server just read. Get your keys with `npx configure setup` or from the [dashboard](https://configu[...]
+Open the page, click **Continue with Configure**, and you land on a page showing the profile your server just read. Get your keys with `npx configure setup` or from the [dashboard](https://configure.dev/dashboard).
 
 ## Keys
 
@@ -102,11 +102,11 @@ The secret key never leaves your server. The browser only ever holds the publish
   show profile  ◀──── profile.read() ◀── exchangeSignInCode(code) ◀────┘ redirect ?code=
 ```
 
-In an agent, the redirect collapses into a single message. The agent texts the link, the user signs in once, and `resolveMessageIdentity` matches them by phone on every turn after that — no sec[...]
+In an agent, the redirect collapses into a single message. The agent texts the `sign-in.me` link, the user signs in once, and `resolveMessageIdentity` matches them by phone on every turn after that — no second OTP loop in the thread.
 
 ## Building with an agent?
 
-This repo is agent-readable. Point a coding agent at [`llms.txt`](./llms.txt) for the whole integration in one file, or drop [`SKILL.md`](./SKILL.md) into its skills — it will install `configur[...]
+This repo is agent-readable. Point a coding agent at [`llms.txt`](./llms.txt) for the whole integration in one file, or drop [`SKILL.md`](./SKILL.md) into its skills — it will install `configure`, build the hosted link, exchange the code, and make the first profile read.
 
 ## Links
 
