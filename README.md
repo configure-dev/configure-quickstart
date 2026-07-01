@@ -30,15 +30,16 @@ Two complete, copy-paste examples — each is the whole integration:
 | Example | What it shows |
 | :-- | :-- |
 | [`web/`](./web) | A "Continue with Configure" button that redirects, exchanges a code, and reads the profile. |
-| [`message-agent/`](./message-agent) | An iMessage agent that recognizes returning users by phone with `resolveMessageIdentity`. |
+| [`message-agent/`](./message-agent) | An iMessage agent (Photon / Spectrum) that recognizes the texter by phone and loads their profile with the `@configure-ai/spectrum-ts` adapter. |
 
 ## Install
 
 ```bash
-npm install configure
+npm install configure                    # web sign-in
+npm install @configure-ai/spectrum-ts    # message agents (Photon / Spectrum)
 ```
 
-Requires `configure >= 1.1.9`.
+Web needs `configure >= 1.1.9`. Message agents need `@configure-ai/spectrum-ts` (which peer-depends on `spectrum-ts >= 8`).
 
 ## Usage
 
@@ -56,21 +57,27 @@ personalize({
 }).listen(4000);
 ```
 
-**Message agent** — wrap a [Spectrum](https://github.com/photon-hq/spectrum-ts) iMessage loop: it recognizes the texter by phone, sends the sign-in link in-thread, and hands you their profile.
+**Message agent** — for agents built on [Photon / Spectrum](https://github.com/photon-hq/spectrum-ts), the `@configure-ai/spectrum-ts` adapter wraps your existing message loop: it recognizes the texter by phone, offers the sign-in link, and hands your handler their Configure profile. You keep your loop and your model.
 
 ```ts
-import { personalize } from "configure/spectrum";
+import { withConfigure, inMemoryStore } from "@configure-ai/spectrum-ts";
 
-personalize(app, {
-  apiKey: process.env.CONFIGURE_API_KEY!,
-  publishableKey: process.env.CONFIGURE_PUBLISHABLE_KEY!,
+const configureSpectrum = withConfigure({
+  apiKey: process.env.CONFIGURE_API_KEY!,                  // sk_, server-side
+  publishableKey: process.env.CONFIGURE_PUBLISHABLE_KEY!,  // pk_, browser-safe
   agent: process.env.CONFIGURE_AGENT!,
-  reply: ({ name, linked }) =>
-    linked ? `hey ${name ?? "there"}, what's up?` : `text "connect" to sign in`,
+  store: inMemoryStore(),                                  // swap for a durable store in production
 });
+
+for await (const [space, message] of app.messages) {
+  await configureSpectrum.handle(space, message, async (ctx) => {
+    const { profile } = await ctx.profile.read();   // who's texting + their memory
+    await message.reply(await runAgent({ message, profile, linked: ctx.linked }));
+  });
+}
 ```
 
-> `personalize` lives at the package root for web; the Spectrum adapter is `configure/spectrum` because it pulls in `spectrum-ts` — so web-only users never install it.
+> Web sign-in uses `personalize` from `configure` (zero extra deps). Message agents use the separate `@configure-ai/spectrum-ts` adapter, which peer-depends on `spectrum-ts` — so web-only users never install it.
 
 Under the hood, that is four SDK calls — build the link, exchange the code server-side, read the profile:
 
@@ -118,7 +125,7 @@ The secret key never leaves your server. The browser only ever holds the publish
   show profile  ◀──── profile.read() ◀── exchangeSignInCode(code) ◀────┘ redirect ?code=
 ```
 
-In an agent, the redirect collapses into a single message. The agent texts the `sign-in.me` link, the user signs in once, and `resolveMessageIdentity` matches them by phone on every turn after that — no second OTP loop in the thread.
+In an agent, the redirect collapses into a single message. The agent texts the `sign-in.me` link, the user signs in once, and the adapter recognizes them by phone on every turn after that — no second OTP loop in the thread.
 
 ## Building with an agent?
 

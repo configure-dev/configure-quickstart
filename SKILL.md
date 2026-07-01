@@ -53,7 +53,7 @@ const { token } = await configure.auth.exchangeSignInCode(code);
 const profile = await configure.profile({ token }).read();
 ```
 
-For message agents (iMessage / SMS / Photon-Spectrum), deliver the same `sign-in.me` link in a message and recognize returning users by phone with `configure.auth.resolveMessageIdentity({ externalId, token, phoneCandidates })`.
+For message agents on Photon / Spectrum, use the `@configure-ai/spectrum-ts` adapter — `withConfigure().handle(space, message, ctx => ...)` recognizes the texter by phone and hands your handler `ctx.profile` (read / remember / tools).
 
 ## Definition of done
 

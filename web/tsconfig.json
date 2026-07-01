@@ -10,5 +10,5 @@
     "skipLibCheck": true,
     "noEmit": true
   },
-  "include": ["server.ts", "personalize.ts"]
+  "include": ["server.ts"]
 }
