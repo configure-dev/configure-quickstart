@@ -1,0 +1,5 @@
+.env
+
+# vendored adapter tarball (regenerate: npm pack in configure-spectrum-ts) + deps
+*.tgz
+node_modules/
