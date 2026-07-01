@@ -26,6 +26,8 @@ const configureSpectrum = withConfigure({
   connect: {
     mode: "intent",
     sendOnce: true,
+    behavior: "send-and-stop",
+    message: "Connect your Configure profile: {url}",
   },
 });
 
@@ -44,8 +46,7 @@ for await (const [space, message] of app.messages) {
     const { profile } = await ctx.profile.read();
     const system = profileHasData(profile)
       ? `${STYLE}\n\nWhat Configure already remembers about this user:\n${JSON.stringify(profile, null, 2)}`
-      : `${STYLE}\n\nYou don't have a profile for them yet. When they ask who they are or how this works, ` +
-        `invite them to load it by tapping this link (send it as its own message):\n${await ctx.signInUrl()}`;
+      : `${STYLE}\n\nNo approved Configure profile is available for this sender yet. Do not claim personal context that is not present in the current conversation or tool results.`;
 
     // Give the model Configure's read / search / remember tools, and run the tool loop.
     const tools = ctx.profile.tools() as unknown as Anthropic.Tool[];
