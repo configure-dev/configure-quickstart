@@ -23,14 +23,14 @@
 
 ---
 
-One package, one call. Your agent recognizes the user from the first message — across every channel, monetized automatically.
+Configure gives agents a hosted sign-in flow and a server-side profile runtime. Web apps use the core SDK. Spectrum message agents use the Configure adapter at the message boundary.
 
-Two complete, copy-paste examples — each is the whole integration:
+Two complete examples show the main integration paths:
 
 | Example | What it shows |
 | :-- | :-- |
 | [`web/`](./web) | A "Continue with Configure" button that redirects, exchanges a code, and reads the profile. |
-| [`message-agent/`](./message-agent) | An iMessage agent that recognizes returning users by phone with `resolveMessageIdentity`. |
+| [`message-agent/`](./message-agent) | A Spectrum/iMessage agent that adds Configure identity and profile context with `withConfigure`. |
 
 ## Install
 
@@ -56,21 +56,27 @@ personalize({
 }).listen(4000);
 ```
 
-**Message agent** — wrap a [Spectrum](https://github.com/photon-hq/spectrum-ts) iMessage loop: it recognizes the texter by phone, sends the sign-in link in-thread, and hands you their profile.
+**Message agent** — wrap an existing [Spectrum](https://github.com/photon-hq/spectrum-ts) message handler. Spectrum owns messaging and delivery; Configure resolves identity, consent, profile runtime, and memory.
 
 ```ts
-import { personalize } from "configure/spectrum";
+import { inMemoryStore, withConfigure } from "@configure-ai/spectrum-ts";
 
-personalize(app, {
+const configureSpectrum = withConfigure({
   apiKey: process.env.CONFIGURE_API_KEY!,
   publishableKey: process.env.CONFIGURE_PUBLISHABLE_KEY!,
   agent: process.env.CONFIGURE_AGENT!,
-  reply: ({ name, linked }) =>
-    linked ? `hey ${name ?? "there"}, what's up?` : `text "connect" to sign in`,
+  store: inMemoryStore(),
 });
+
+for await (const [space, message] of app.messages) {
+  await configureSpectrum.handle(space, message, async (ctx) => {
+    const { profile } = await ctx.profile.read();
+    // Your model loop and reply logic stay yours.
+  });
+}
 ```
 
-> `personalize` lives at the package root for web; the Spectrum adapter is `configure/spectrum` because it pulls in `spectrum-ts` — so web-only users never install it.
+> Until `@configure-ai/spectrum-ts` is published to npm, `message-agent/` installs the checked-in preview tarball from `message-agent/vendor/`.
 
 Under the hood, that is four SDK calls — build the link, exchange the code server-side, read the profile:
 
@@ -81,7 +87,7 @@ const { token } = await configure.auth.exchangeSignInCode(code);    // exchange 
 const profile = await configure.profile({ token }).read();         // read
 ```
 
-The same `sign-in.me` hosted link works on the web (a redirect), in iMessage (a text), or in a voice agent (read aloud) — and Configure recognizes the same user across all of them at once. One identity, everywhere.
+The same hosted link works on the web as a redirect, in iMessage as a text, or in a voice agent as a spoken URL. Configure resolves the user server-side before profile access.
 
 ## Quickstart
 
@@ -94,7 +100,7 @@ npm install
 npm run dev              # → http://localhost:4000
 ```
 
-Open the page, click **Continue with Configure**, and you land on a page showing the profile your server just read. Get your keys with `npx configure setup` or from the [dashboard](https://configure.dev/dashboard).
+Open the page, click **Continue with Configure**, and you land on a page showing the profile your server just read. Get your keys with `npx configure setup` or from the [dashboard](https://configure.dev).
 
 ## Keys
 
@@ -118,11 +124,11 @@ The secret key never leaves your server. The browser only ever holds the publish
   show profile  ◀──── profile.read() ◀── exchangeSignInCode(code) ◀────┘ redirect ?code=
 ```
 
-In an agent, the redirect collapses into a single message. The agent texts the `sign-in.me` link, the user signs in once, and `resolveMessageIdentity` matches them by phone on every turn after that — no second OTP loop in the thread.
+In a Spectrum message agent, `withConfigure` wraps the existing message handler. Spectrum owns messaging and delivery; Configure resolves identity, consent, and profile access before the agent replies.
 
 ## Building with an agent?
 
-This repo is agent-readable. Point a coding agent at [`llms.txt`](./llms.txt) for the whole integration in one file, or drop [`SKILL.md`](./SKILL.md) into its skills — it will install `configure`, build the hosted link, exchange the code, and make the first profile read.
+This repo is agent-readable. Point a coding agent at [`llms.txt`](./llms.txt) for the whole integration in one file, or drop [`SKILL.md`](./SKILL.md) into its skills.
 
 ## Links
 

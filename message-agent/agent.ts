@@ -2,7 +2,7 @@ import "dotenv/config";
 import Anthropic from "@anthropic-ai/sdk";
 import { Spectrum } from "spectrum-ts";
 import { imessage } from "spectrum-ts/providers/imessage";
-import { personalize } from "configure/spectrum";
+import { inMemoryStore, withConfigure } from "@configure-ai/spectrum-ts";
 
 // Three pieces: Spectrum is the phone, Configure is the memory, Claude is the brain.
 const claude = new Anthropic(); // reads ANTHROPIC_API_KEY
@@ -13,6 +13,21 @@ const app = await Spectrum({
   providers: [imessage.config()],
 });
 
+const configureSpectrum = withConfigure({
+  apiKey: process.env.CONFIGURE_API_KEY!,
+  publishableKey: process.env.CONFIGURE_PUBLISHABLE_KEY!,
+  agent: process.env.CONFIGURE_AGENT!,
+  store: inMemoryStore(),
+  signIn: {
+    displayName: "Configure",
+    agentPhone: process.env.AGENT_PHONE_NUMBER,
+  },
+  connect: {
+    mode: "intent",
+    sendOnce: true,
+  },
+});
+
 const STYLE =
   "You are the assistant behind Configure, demoing the Configure x Photon partnership over iMessage. " +
   "You're a warm, genuinely helpful guide who is also low-key showing off Configure: it gives any agent " +
@@ -21,51 +36,57 @@ const STYLE =
   "Texting style: SHORT and human — at most two brief messages; if you send two, separate them with a line " +
   "that is only ---. Never send a wall of text. If a group message clearly isn't for you, reply [SKIP].";
 
-personalize(app, {
-  apiKey: process.env.CONFIGURE_API_KEY!,
-  publishableKey: process.env.CONFIGURE_PUBLISHABLE_KEY!,
-  agent: process.env.CONFIGURE_AGENT!,
-  agentPhone: process.env.AGENT_PHONE_NUMBER,
-  displayName: "Configure",
-  reply: async ({ text, profile, signInUrl, runtime }) => {
+for await (const [space, message] of app.messages) {
+  await configureSpectrum.handle(space, message, async (ctx) => {
+    if (!ctx.text) return;
+
+    const { profile } = await ctx.profile.read();
     const system = profileHasData(profile)
       ? `${STYLE}\n\nWhat Configure already remembers about this user:\n${JSON.stringify(profile, null, 2)}`
       : `${STYLE}\n\nYou don't have a profile for them yet. When they ask who they are or how this works, ` +
-        `invite them to load it by tapping this link (send it as its own message):\n${signInUrl}`;
+        `invite them to load it by tapping this link (send it as its own message):\n${await ctx.signInUrl()}`;
 
     // Give Claude Configure's read / search / remember tools, and run the tool loop.
-    const tools = runtime.tools() as unknown as Anthropic.Tool[];
-    const messages: Anthropic.MessageParam[] = [{ role: "user", content: text }];
+    const tools = ctx.profile.tools() as unknown as Anthropic.Tool[];
+    const messages: Anthropic.MessageParam[] = [{ role: "user", content: ctx.text }];
 
     for (let hop = 0; hop < 4; hop += 1) {
-      const message = await claude.messages.create({
+      const reply = await claude.messages.create({
         model: "claude-sonnet-4-6",
         max_tokens: 500,
         system,
         tools,
         messages,
       });
-      messages.push({ role: "assistant", content: message.content });
+      messages.push({ role: "assistant", content: reply.content });
 
-      const toolUses = message.content.filter((c): c is Anthropic.ToolUseBlock => c.type === "tool_use");
+      const toolUses = reply.content.filter((c): c is Anthropic.ToolUseBlock => c.type === "tool_use");
       if (toolUses.length === 0) {
-        const out = message.content.map((c) => (c.type === "text" ? c.text : "")).join("").trim();
-        if (!out || out === "[SKIP]") return null;
-        return out.split(/\n?---\n?/).map((s) => s.trim()).filter(Boolean).slice(0, 2);
+        const out = reply.content.map((c) => (c.type === "text" ? c.text : "")).join("").trim();
+        if (!out || out === "[SKIP]") return;
+        const bursts = out.split(/\n?---\n?/).map((s) => s.trim()).filter(Boolean).slice(0, 2);
+        for (let i = 0; i < bursts.length; i += 1) {
+          if (i > 0) await sleep(900 + Math.floor(Math.random() * 2100));
+          await message.reply(bursts[i]);
+        }
+        return;
       }
 
       const toolResults: Anthropic.ToolResultBlockParam[] = await Promise.all(
         toolUses.map(async (call) => ({
           type: "tool_result" as const,
           tool_use_id: call.id,
-          content: safeJson(await runtime.executeTool({ name: call.name, arguments: asRecord(call.input) })),
+          content: safeJson(await ctx.profile.executeTool({ name: call.name, arguments: asRecord(call.input) })),
         })),
       );
       messages.push({ role: "user", content: toolResults });
     }
-    return null;
-  },
-});
+  });
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
 
 function asRecord(value: unknown): Record<string, unknown> {
   return isRecord(value) ? value : {};

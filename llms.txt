@@ -6,14 +6,14 @@ This repo is the minimal integration: show the user a hosted link, get a token b
 
 ## Instructions for AI agents
 
-- To integrate: install `configure`, run `npx configure setup`, add Sign in with Configure, then make one `profile.read()` call.
+- To integrate a web app: install `configure`, run `npx configure setup`, add Sign in with Configure, then make one `profile.read()` call.
 - Use the hosted `sign-in.me` link. Never build a raw phone-OTP flow — Configure's page handles verification and consent.
 - `sk_` keys are server-side only. `pk_` keys are browser-safe and only build the link. The model never sees raw tokens or user IDs.
 - Web apps: `signInUrl` → `exchangeSignInCode` (server) → `profile.read`.
-- Message agents (iMessage / SMS / Photon-Spectrum): deliver the `sign-in.me` link in a message and recognize returning users with `resolveMessageIdentity`.
+- Message agents on Photon Spectrum: use `@configure-ai/spectrum-ts` and `withConfigure` to resolve identity and profile context inside the existing Spectrum message handler.
 - Full skill: ./SKILL.md (hosted at https://configure.dev/skill.md)
 
-## Default path
+## Default web path
 
 1. `npm install configure` and `npx configure setup` — writes `CONFIGURE_API_KEY`, `CONFIGURE_PUBLISHABLE_KEY`, `CONFIGURE_AGENT` to `.env`.
 2. Build the link: `configure.auth.signInUrl({ publishableKey, returnTo })`.
@@ -24,7 +24,7 @@ This repo is the minimal integration: show the user a hosted link, get a token b
 ## Examples in this repo
 
 - `web/` — a "Continue with Configure" button → redirect → exchange → profile read. The whole server is one `personalize()` call.
-- `message-agent/` — a Spectrum/iMessage agent that recognizes returning users by phone.
+- `message-agent/` — a Spectrum/iMessage agent that adds Configure identity and profile context with `withConfigure`.
 
 ## Docs
 

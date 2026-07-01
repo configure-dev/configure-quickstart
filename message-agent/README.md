@@ -1,6 +1,8 @@
-# Message agent — Configure on Photon / Spectrum
+# Message Agent — Configure for Spectrum
 
-An iMessage / SMS agent that **recognizes the user silently by phone** and sends a single `sign-in.me` hosted link when they want to connect. The whole loop is in [`agent.ts`](./agent.ts).
+An iMessage / SMS agent built on Photon Spectrum. The example keeps the normal Spectrum message loop and adds Configure identity, consent, profile context, and memory tools with `withConfigure`.
+
+Until `@configure-ai/spectrum-ts` is published to npm, this example installs the packed preview tarball from [`vendor/`](./vendor/).
 
 ## Run it
 
@@ -10,14 +12,16 @@ npm install
 npm run dev
 ```
 
-You’ll need a [Photon](https://app.photon.codes) project (for the iMessage line) and Configure keys.
+You'll need a [Photon](https://app.photon.codes) project for the iMessage line, Configure keys, and an Anthropic API key.
 
-## The flow (what `agent.ts` does)
+## The flow
 
-On every inbound message:
+On every inbound message, `withConfigure`:
 
-1. **Recognize** — `configure.auth.resolveMessageIdentity({ externalId, token, phoneCandidates })` returns the user. If they’ve signed in before, they’re matched by phone with **zero friction**; otherwise you get a stable `externalId` to use until they link.
-2. **Connect** — when the message says “connect”, `configure.auth.signInUrl({ delivery: "message" })` builds the `https://sign-in.me/{agent}` hosted link and the agent texts it. Configure handles phone + consent.
-3. **Personalize** — `configure.profile(identity).read()` returns the profile, so the agent can greet the user by name and reason over their connected accounts.
+1. **Resolves identity** from a stored token, phone-backed sender evidence, or a stable developer-scoped fallback.
+2. **Sends sign-in links** when the user asks to connect. Configure handles phone verification and consent.
+3. **Provides profile runtime** through `ctx.profile`, including read, search, remember, and tool execution.
 
-This is the same primitive as the [web example](../web) — only the **delivery** differs (a text instead of a redirect). That’s why Configure is channel-agnostic.
+The handler then gives Claude the Configure tools, so the agent can read and remember user context before replying.
+
+Spectrum owns messaging and delivery. Configure owns identity, consent, profile runtime, and memory.
