@@ -39,4 +39,6 @@ Use this checklist before wiring the minted URL API:
 7. Confirm the sender is recognized as linked, the handler runs, and the model receives Configure profile context.
 8. Confirm no federated or cross-agent profile context is included before `ctx.linked` is true. Developer-scoped unlinked context may exist if the same app already wrote it.
 
+For the current plain-link flow, step 7 depends on Spectrum exposing phone-backed sender evidence on the next inbound message, which iMessage/SMS-style channels should provide through sender metadata. If a channel only exposes a channel-local sender id, the adapter will continue with a developer-scoped unlinked profile until the minted URL / signed subject-token flow is wired in.
+
 The current flow intentionally does not require Photon signed-token or magic-link support. The next implementation can replace the plain link provider with Jon's minting API without changing the handler.
