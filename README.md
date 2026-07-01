@@ -23,7 +23,10 @@
 
 ---
 
-Configure gives agents a hosted sign-in flow and a server-side profile runtime. Web apps use the core SDK. Spectrum message agents use the Configure adapter at the message boundary.
+Configure gives agents a hosted sign-in flow and a server-side profile runtime. This repo keeps the two main integration paths separate:
+
+- **Web apps** use the core `configure` SDK. The `web/` example uses `personalize()` as a small web-server convenience.
+- **Spectrum message agents** keep Spectrum as the messaging runtime and add Configure at the message boundary with `withConfigure`.
 
 Two complete examples show the main integration paths:
 
@@ -34,15 +37,19 @@ Two complete examples show the main integration paths:
 
 ## Install
 
+For web apps:
+
 ```bash
 npm install configure
 ```
 
-Requires `configure >= 1.1.9`.
+For Spectrum message agents, use the Configure Spectrum adapter with Photon's Spectrum SDK. Until `@configure-ai/spectrum-ts` is published to npm, the message-agent example installs the checked-in preview tarball from `message-agent/vendor/`.
 
 ## Usage
 
-**Web** — one `personalize()` call runs the whole sign-in server (no framework, no routes):
+**Web apps: `personalize()`**
+
+`personalize()` is a web convenience helper. It runs a minimal sign-in server for the hosted Configure flow, exchanges the returned code server-side, and reads the profile.
 
 ```ts
 import { personalize } from "configure";
@@ -56,7 +63,9 @@ personalize({
 }).listen(4000);
 ```
 
-**Message agent** — wrap an existing [Spectrum](https://github.com/photon-hq/spectrum-ts) message handler. Spectrum owns messaging and delivery; Configure resolves identity, consent, profile runtime, and memory.
+**Spectrum message agents: `withConfigure()`**
+
+`withConfigure()` is the Spectrum adapter. It wraps an existing [Spectrum](https://github.com/photon-hq/spectrum-ts) message handler so Spectrum continues to own messaging, providers, webhooks, and delivery. Configure resolves identity, consent, profile runtime, and memory access before the handler replies.
 
 ```ts
 import { withConfigure } from "@configure-ai/spectrum-ts";
@@ -78,7 +87,7 @@ for await (const [space, message] of app.messages) {
 
 > Until `@configure-ai/spectrum-ts` is published to npm, `message-agent/` installs the checked-in preview tarball from `message-agent/vendor/`.
 
-Under the hood, that is four SDK calls — build the link, exchange the code server-side, read the profile:
+Under the hood, both paths rely on the same Configure primitives: build a hosted link, exchange the returned code server-side, then read the profile.
 
 ```ts
 const configure = new Configure({ apiKey, agent });
@@ -87,7 +96,7 @@ const { token } = await configure.auth.exchangeSignInCode(code);    // exchange 
 const profile = await configure.profile({ token }).read();         // read
 ```
 
-The same hosted link works on the web as a redirect, in iMessage as a text, or in a voice agent as a spoken URL. Configure resolves the user server-side before profile access.
+Configure resolves the user server-side before profile access. In Spectrum message agents, `withConfigure()` owns the message-auth handoff so the model does not generate Configure sign-in links.
 
 ## Quickstart
 
@@ -101,6 +110,15 @@ npm run dev              # → http://localhost:4000
 ```
 
 Open the page, click **Continue with Configure**, and you land on a page showing the profile your server just read. Get your keys with `npx configure setup` or from the [dashboard](https://configure.dev).
+
+For the Spectrum example:
+
+```bash
+cd ../message-agent
+cp .env.example .env     # add Configure + Photon keys
+npm install
+npm run dev
+```
 
 ## Keys
 
@@ -124,7 +142,7 @@ The secret key never leaves your server. The browser only ever holds the publish
   show profile  ◀──── profile.read() ◀── exchangeSignInCode(code) ◀────┘ redirect ?code=
 ```
 
-In a Spectrum message agent, `withConfigure` wraps the existing message handler. Spectrum owns messaging and delivery; Configure resolves identity, consent, and profile access before the agent replies.
+In a Spectrum message agent, `withConfigure()` wraps the existing message handler. Spectrum owns messaging, providers, webhooks, and delivery; Configure resolves identity, consent, and profile access before the agent replies.
 
 ## Building with an agent?
 

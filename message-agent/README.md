@@ -1,6 +1,6 @@
-# Message Agent — Configure for Spectrum
+# Configure for Spectrum Message Agents
 
-An iMessage / SMS agent built on Photon Spectrum. The example keeps the normal Spectrum message loop and adds Configure identity, consent, profile context, and memory tools with `withConfigure`.
+This example is a Spectrum message agent for iMessage/SMS. It keeps the normal Spectrum message loop and adds Configure identity, consent, profile context, and memory tools with `withConfigure`.
 
 Until `@configure-ai/spectrum-ts` is published to npm, this example installs the packed preview tarball from [`vendor/`](./vendor/).
 
@@ -22,11 +22,11 @@ On every inbound message, `withConfigure`:
 2. **Sends sign-in links outside the model path** when the user asks to connect. Configure handles verification and consent, then the adapter stops the turn before the model runs.
 3. **Provides profile runtime** through `ctx.profile`, including read, search, remember, and tool execution.
 
-The handler then gives its model Configure tools, so the agent can read and remember user context before replying. The model does not generate Configure sign-in URLs; `withConfigure` handles that as runtime policy. The sample uses one model SDK, but the Configure and Spectrum integration does not depend on any specific model provider.
+The handler gives its model Configure tools, so the agent can read and remember user context before replying. The model does not generate Configure sign-in URLs; `withConfigure` handles that as runtime policy. The sample uses one model SDK, but the Configure and Spectrum integration does not depend on any specific model provider.
 
-The sample uses `withConfigure.localStore()` for process-local adapter state while running locally. Production apps should provide a durable store for sender mappings, approved Configure tokens, sign-in delivery state, and webhook idempotency.
+The sample uses `withConfigure.localStore()` for process-local adapter state while running locally. When deploying, back the store with the persistence your app already uses for server-side state: sender mappings, approved Configure tokens, sign-in delivery state, and webhook idempotency.
 
-Spectrum owns messaging and delivery. Configure owns identity, consent, profile runtime, and memory.
+Spectrum owns messaging, providers, webhooks, and delivery. Configure owns identity, consent, profile runtime, and memory access. The adapter joins those systems at the message boundary.
 
 ## E2E checklist
 
