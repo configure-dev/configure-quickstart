@@ -30,7 +30,7 @@ Spectrum owns messaging, providers, webhooks, and delivery. Configure owns ident
 
 ## E2E checklist
 
-Use this checklist before wiring the minted URL API:
+Use this checklist before wiring the Configure message URL minting API:
 
 1. Fill `.env` with real Configure keys, `CONFIGURE_AGENT`, Photon project credentials, `AGENT_PHONE_NUMBER`, and model credentials.
 2. Start the worker with `npm run dev`.
@@ -43,4 +43,4 @@ Use this checklist before wiring the minted URL API:
 
 For the current plain-link flow, step 7 depends on Spectrum exposing phone-backed sender evidence on the next inbound message, which iMessage/SMS-style channels should provide through sender metadata. If a channel only exposes a channel-local sender id, the adapter will continue with a developer-scoped unlinked profile until the minted URL / signed subject-token flow is wired in.
 
-The current flow intentionally does not require Photon signed-token or magic-link support. The next implementation can replace the plain link provider with Jon's minting API without changing the handler.
+The current flow intentionally does not require Photon signed-token or magic-link support. The next implementation can replace the plain link provider with Configure's message URL minting API without changing the handler.
