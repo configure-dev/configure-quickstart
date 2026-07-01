@@ -12,7 +12,7 @@ npm install
 npm run dev
 ```
 
-You'll need a [Photon](https://app.photon.codes) project for the iMessage line, Configure keys, and an Anthropic API key.
+You'll need a [Photon](https://app.photon.codes) project for the iMessage line, Configure keys, and model provider credentials for the sample handler.
 
 ## The flow
 
@@ -22,6 +22,6 @@ On every inbound message, `withConfigure`:
 2. **Sends sign-in links** when the user asks to connect. Configure handles phone verification and consent.
 3. **Provides profile runtime** through `ctx.profile`, including read, search, remember, and tool execution.
 
-The handler then gives Claude the Configure tools, so the agent can read and remember user context before replying.
+The handler then gives its model Configure tools, so the agent can read and remember user context before replying. The sample uses one model SDK, but the Configure and Spectrum integration does not depend on any specific model provider.
 
 Spectrum owns messaging and delivery. Configure owns identity, consent, profile runtime, and memory.

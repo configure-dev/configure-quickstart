@@ -4,8 +4,9 @@ import { Spectrum } from "spectrum-ts";
 import { imessage } from "spectrum-ts/providers/imessage";
 import { inMemoryStore, withConfigure } from "@configure-ai/spectrum-ts";
 
-// Three pieces: Spectrum is the phone, Configure is the memory, Claude is the brain.
-const claude = new Anthropic(); // reads ANTHROPIC_API_KEY
+// Spectrum carries messages, Configure resolves user context, and your model generates replies.
+const model = new Anthropic({ apiKey: requireEnv("MODEL_API_KEY") });
+const modelName = requireEnv("MODEL_NAME");
 
 const app = await Spectrum({
   projectId: process.env.PHOTON_PROJECT_ID!,
@@ -46,13 +47,13 @@ for await (const [space, message] of app.messages) {
       : `${STYLE}\n\nYou don't have a profile for them yet. When they ask who they are or how this works, ` +
         `invite them to load it by tapping this link (send it as its own message):\n${await ctx.signInUrl()}`;
 
-    // Give Claude Configure's read / search / remember tools, and run the tool loop.
+    // Give the model Configure's read / search / remember tools, and run the tool loop.
     const tools = ctx.profile.tools() as unknown as Anthropic.Tool[];
     const messages: Anthropic.MessageParam[] = [{ role: "user", content: ctx.text }];
 
     for (let hop = 0; hop < 4; hop += 1) {
-      const reply = await claude.messages.create({
-        model: "claude-sonnet-4-6",
+      const reply = await model.messages.create({
+        model: modelName,
         max_tokens: 500,
         system,
         tools,
@@ -86,6 +87,12 @@ for await (const [space, message] of app.messages) {
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function requireEnv(name: string): string {
+  const value = process.env[name];
+  if (!value) throw new Error(`Missing required env var: ${name}. Copy .env.example to .env and fill it in.`);
+  return value;
 }
 
 function asRecord(value: unknown): Record<string, unknown> {
