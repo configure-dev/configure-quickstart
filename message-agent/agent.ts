@@ -44,7 +44,7 @@ for await (const [space, message] of app.messages) {
     if (!ctx.text) return;
 
     const { profile } = await ctx.profile.read();
-    const system = profileHasData(profile)
+    const system = ctx.linked || profileHasData(profile)
       ? `${STYLE}\n\nWhat Configure already remembers about this user:\n${JSON.stringify(profile, null, 2)}`
       : `${STYLE}\n\nNo approved Configure profile is available for this sender yet. Do not claim personal context that is not present in the current conversation or tool results.`;
 
