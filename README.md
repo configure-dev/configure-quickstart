@@ -87,11 +87,11 @@ for await (const [space, message] of app.messages) {
 
 > Until `@configure-ai/spectrum-ts` is published to npm, `message-agent/` installs the checked-in preview tarball from `message-agent/vendor/`.
 
-Under the hood, both paths rely on the same Configure primitives: build a hosted link, exchange the returned code server-side, then read the profile.
+Under the hood, both paths rely on the same Configure primitives: open a hosted Configure handoff, keep tokens server-side, then read the profile. Web apps usually build the hosted URL directly. Spectrum message agents let the adapter own link delivery before the model handler runs.
 
 ```ts
 const configure = new Configure({ apiKey, agent });
-const url = configure.auth.signInUrl({ publishableKey, returnTo }); // sign-in.me hosted link (pk_)
+const url = configure.auth.signInUrl({ publishableKey, returnTo }); // hosted web/account-link handoff
 const { token } = await configure.auth.exchangeSignInCode(code);    // exchange (sk_)
 const profile = await configure.profile({ token }).read();         // read
 ```
