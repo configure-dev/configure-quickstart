@@ -30,7 +30,7 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.106.0",
-    "@configure-ai/spectrum-ts": "^0.1.0-preview.0",
+    "@configure-ai/spectrum-ts": "file:configure-ai-spectrum-ts-0.1.0-preview.0.tgz",
     "dotenv": "^17.0.0",
     "spectrum-ts": "^8.1.1"
   },

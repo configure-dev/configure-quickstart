@@ -35,11 +35,10 @@ Two complete, copy-paste examples — each is the whole integration:
 ## Install
 
 ```bash
-npm install configure                    # web sign-in
-npm install @configure-ai/spectrum-ts    # message agents (Photon / Spectrum)
+npm install configure    # web sign-in
 ```
 
-Web needs `configure >= 1.1.9`. Message agents need `@configure-ai/spectrum-ts` (which peer-depends on `spectrum-ts >= 8`).
+Message agents (Photon / Spectrum) use **`@configure-ai/spectrum-ts`** — a private preview **vendored in [`message-agent/`](./message-agent)** until it's on npm. Web needs `configure >= 1.1.9`; the adapter peer-depends on `spectrum-ts >= 8`.
 
 ## Usage
 
