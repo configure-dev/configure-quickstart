@@ -2,7 +2,7 @@ import "dotenv/config";
 import Anthropic from "@anthropic-ai/sdk";
 import { Spectrum } from "spectrum-ts";
 import { imessage } from "spectrum-ts/providers/imessage";
-import { inMemoryStore, withConfigure } from "@configure-ai/spectrum-ts";
+import { withConfigure } from "@configure-ai/spectrum-ts";
 
 // Spectrum carries messages, Configure resolves user context, and your model generates replies.
 const model = new Anthropic({ apiKey: requireEnv("MODEL_API_KEY") });
@@ -18,7 +18,7 @@ const configureSpectrum = withConfigure({
   apiKey: process.env.CONFIGURE_API_KEY!,
   publishableKey: process.env.CONFIGURE_PUBLISHABLE_KEY!,
   agent: process.env.CONFIGURE_AGENT!,
-  store: inMemoryStore(),
+  store: withConfigure.localStore(),
   signIn: {
     displayName: "Configure",
     agentPhone: process.env.AGENT_PHONE_NUMBER,

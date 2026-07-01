@@ -59,13 +59,13 @@ personalize({
 **Message agent** — wrap an existing [Spectrum](https://github.com/photon-hq/spectrum-ts) message handler. Spectrum owns messaging and delivery; Configure resolves identity, consent, profile runtime, and memory.
 
 ```ts
-import { inMemoryStore, withConfigure } from "@configure-ai/spectrum-ts";
+import { withConfigure } from "@configure-ai/spectrum-ts";
 
 const configureSpectrum = withConfigure({
   apiKey: process.env.CONFIGURE_API_KEY!,
   publishableKey: process.env.CONFIGURE_PUBLISHABLE_KEY!,
   agent: process.env.CONFIGURE_AGENT!,
-  store: inMemoryStore(),
+  store: withConfigure.localStore(),
 });
 
 for await (const [space, message] of app.messages) {
