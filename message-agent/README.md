@@ -22,7 +22,7 @@ On every inbound message, `withConfigure`:
 2. **Sends sign-in links outside the model path** when the user asks to connect. Configure handles verification and consent, then the adapter stops the turn before the model runs.
 3. **Provides profile runtime** through `ctx.profile`, including read, search, remember, and tool execution.
 
-The handler gives its model Configure tools, so the agent can read and remember user context before replying. The model does not generate Configure sign-in URLs; `withConfigure` handles that as runtime policy. The sample uses one model SDK, but the Configure and Spectrum integration does not depend on any specific model provider.
+The handler gives its model Configure tools, so the agent can read and remember user context before replying. The model does not generate Configure sign-in URLs; `withConfigure` handles that as runtime policy. If a Configure-backed connector later needs repair, application code can send a targeted hosted reconnect link with `ctx.replyWithReconnect({ connectors: ["gmail"] })` instead of teaching the model a URL format. The sample uses one model SDK, but the Configure and Spectrum integration does not depend on any specific model provider.
 
 The sample uses `withConfigure.localStore()` for process-local adapter state while running locally. When deploying, back the store with the persistence your app already uses for server-side state: sender mappings, approved Configure tokens, sign-in delivery state, and webhook idempotency.
 
