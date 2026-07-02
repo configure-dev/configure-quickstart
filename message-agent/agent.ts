@@ -22,6 +22,7 @@ const configureSpectrum = withConfigure({
   signIn: {
     displayName: "Configure",
     agentPhone: process.env.AGENT_PHONE_NUMBER,
+    linkMode: "auto",
   },
   connect: {
     mode: "intent",

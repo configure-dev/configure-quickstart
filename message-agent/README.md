@@ -43,4 +43,4 @@ Use this checklist for the current plain-link flow:
 
 For the current plain-link flow, step 7 depends on Spectrum exposing phone-backed sender evidence on the next inbound message, which iMessage/SMS-style channels should provide through sender metadata. If a channel only exposes a channel-local sender id, the adapter will continue with a developer-scoped unlinked profile until signed subject-token support is available for that channel.
 
-The sample intentionally does not require Photon signed-token or magic-link support. When signed subject evidence is available, set `signIn.linkMode` to `"auto"` so the adapter can ask Configure for a message-bound URL; if verification is unavailable, it keeps sending the plain `sign-in.me/{agent}` link. The handler does not change.
+The sample intentionally does not require Photon signed-token or magic-link support. `signIn.linkMode: "auto"` routes link creation through Configure's message URL API; if verification is unavailable, Configure still returns the plain `sign-in.me/{agent}` link. The handler does not change.
