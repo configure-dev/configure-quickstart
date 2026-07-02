@@ -53,7 +53,7 @@ const { token } = await configure.auth.exchangeSignInCode(code);
 const profile = await configure.profile({ token }).read();
 ```
 
-For message agents on Photon Spectrum, use `@configure-ai/spectrum-ts` and `withConfigure`. Spectrum owns messaging and delivery; Configure resolves identity, consent, profile runtime, and memory before the handler replies.
+For message agents on Photon Spectrum, use `configure-spectrum` and `withConfigure`. Spectrum owns messaging and delivery; Configure resolves identity, consent, profile runtime, and memory before the handler replies.
 
 ## Definition of done
 
