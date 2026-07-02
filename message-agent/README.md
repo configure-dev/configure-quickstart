@@ -32,7 +32,7 @@ Spectrum owns messaging, providers, webhooks, and delivery. Configure owns ident
 
 Use this checklist for the current plain-link flow:
 
-1. Fill `.env` with real Configure keys, `CONFIGURE_AGENT`, Photon project credentials, `AGENT_PHONE_NUMBER`, and model credentials.
+1. Fill `.env` with real Configure keys, `CONFIGURE_AGENT`, Photon project credentials, and model credentials. `AGENT_PHONE_NUMBER` is only an override when Spectrum cannot expose the routed iMessage line.
 2. Start the worker with `npm run dev`.
 3. Text the Photon/iMessage line with a connect intent such as `connect my profile`.
 4. Confirm the adapter replies with a clean `https://sign-in.me/{agent}` link and the model does not send a second response for that turn.
@@ -43,4 +43,4 @@ Use this checklist for the current plain-link flow:
 
 For the current plain-link flow, step 7 depends on Spectrum exposing phone-backed sender evidence on the next inbound message, which iMessage/SMS-style channels should provide through sender metadata. If a channel only exposes a channel-local sender id, the adapter will continue with a developer-scoped unlinked profile until signed subject-token support is available for that channel.
 
-The sample intentionally does not require Photon signed-token or magic-link support. `signIn.linkMode: "auto"` routes link creation through Configure's message URL API; if verification is unavailable, Configure still returns the plain `sign-in.me/{agent}` link. The handler does not change.
+The sample intentionally does not require Photon signed-token or magic-link support. `signIn.linkMode: "auto"` registers the current return line with Configure, routes link creation through Configure's message URL API, and still gets a plain `sign-in.me/{agent}` link when verification is unavailable. The handler does not change.
