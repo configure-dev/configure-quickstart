@@ -80,20 +80,27 @@ const configureSpectrum = withConfigure({
 
 for await (const [space, message] of app.messages) {
   await configureSpectrum.handle(space, message, async (ctx) => {
-    const { profile } = await ctx.profile.read();
-    // Your model loop and reply logic stay yours.
+    const { profile } = await ctx.profile.read({
+      sections: ["identity", "preferences", "summary"],
+    });
+    const profileOverview = profile.format({ guidelines: false, maxChars: 6_000 });
+    // Give your model the overview plus ctx.profile.tools(); use search for specifics.
   });
 }
 ```
 
-Under the hood, both paths rely on the same Configure primitives: open a hosted Configure handoff, keep tokens server-side, then read the profile. Web apps usually build the hosted URL directly. Spectrum message agents let the adapter own link delivery before the model handler runs.
+Under the hood, both paths rely on the same Configure primitives: open a hosted Configure handoff, keep tokens server-side, then read a compact profile overview. Web apps usually build the hosted URL directly. Spectrum message agents let the adapter own link delivery before the model handler runs.
 
 ```ts
 const configure = new Configure({ apiKey, agent });
 const url = configure.auth.signInUrl({ publishableKey, returnTo }); // hosted web/account-link handoff
 const { token } = await configure.auth.exchangeSignInCode(code);    // exchange (sk_)
-const profile = await configure.profile({ token }).read();         // read
+const read = await configure.profile({ token }).read({
+  sections: ["identity", "preferences", "summary"],
+});                                                                // compact overview
 ```
+
+Use `profile.format({ maxChars })` for prompt orientation and `configure_profile_search` for concrete memories, imported-source questions, or details that need completeness/source attribution. Until every install has the SDK version with `maxChars` typed, clamp formatted context to the same budget before adding it to a prompt.
 
 Configure resolves the user server-side before profile access. In Spectrum message agents, `withConfigure()` owns the message-auth handoff so the model does not generate Configure sign-in links.
 

@@ -1,6 +1,6 @@
 ---
 name: configure
-description: Add "Sign in with Configure" to an app or agent — show a hosted link, get a token, read the user's profile — and prove it with a real profile read.
+description: Add "Sign in with Configure" to an app or agent — show a hosted link, get a token, read a compact profile overview, and prove it with a personalized response plus a real profile read/search path.
 homepage: https://configure.dev
 docs: https://docs.configure.dev
 metadata: {"api_base":"https://api.configure.dev"}
@@ -12,7 +12,7 @@ Configure is the identity and personalization layer for AI agents. A user brings
 
 ## If you were sent here
 
-If someone says "read this and add Sign in with Configure," your job is to let a user sign in with Configure, read their profile, and use it in a personalized response. Treat "Sign in with Configure" as the user-facing name for the flow below.
+If someone says "read this and add Sign in with Configure," your job is to let a user sign in with Configure, read a compact approved profile overview, and use it in a personalized response. Treat "Sign in with Configure" as the user-facing name for the flow below.
 
 Read the full agent docs index before using advanced APIs: https://docs.configure.dev/llms.txt
 
@@ -49,18 +49,25 @@ const url = configure.auth.signInUrl({ publishableKey, returnTo });
 // 3. Exchange it server-side (sk_).
 const { token } = await configure.auth.exchangeSignInCode(code);
 
-// 4. Read the profile and personalize.
-const profile = await configure.profile({ token }).read();
+// 4. Read a compact overview and personalize.
+const read = await configure.profile({ token }).read({
+  sections: ["identity", "preferences", "summary"],
+});
+const context = read.profile.format({ maxChars: 6_000 });
 ```
 
 For message agents on Photon Spectrum, use `configure-spectrum` and `withConfigure` with `signIn.linkMode: "managed"`. Spectrum owns messaging and delivery; Configure resolves identity, consent, profile runtime, and memory before the handler replies.
+
+Use `profile.format({ maxChars })` for prompt orientation, not as the full record. Keep Configure tools available and use `configure_profile_search` for concrete memories, imported-source questions such as "what does ChatGPT remember about me?", and details that need completeness or source attribution.
+
+If the installed SDK types do not yet include `maxChars`, clamp the formatted string to the same budget before putting it in the prompt.
 
 ## Definition of done
 
 - `configure` is installed and `.env` has `CONFIGURE_API_KEY`, `CONFIGURE_PUBLISHABLE_KEY`, `CONFIGURE_AGENT`.
 - A user can sign in with Configure — a web redirect, or a link sent in a message.
 - The one-time code is exchanged server-side and the token is stored server-side.
-- You called `configure.profile({ token }).read()` and used the result in a personalized response.
+- You called `configure.profile({ token }).read({ sections: ["identity", "preferences", "summary"] })`, formatted it as bounded prompt context, and used it in a personalized response.
 
 ## Rules
 
