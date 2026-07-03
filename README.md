@@ -43,7 +43,7 @@ For web apps:
 npm install configure
 ```
 
-For Spectrum message agents, use `configure-spectrum` with Photon's Spectrum SDK. Until `configure-spectrum` is published to npm, the message-agent example installs the checked-in preview tarball from `message-agent/vendor/`.
+For Spectrum message agents, use `configure-spectrum` with Photon's Spectrum SDK.
 
 ## Usage
 
@@ -84,8 +84,6 @@ for await (const [space, message] of app.messages) {
   });
 }
 ```
-
-> Until `configure-spectrum` is published to npm, `message-agent/` installs the checked-in preview tarball from `message-agent/vendor/`.
 
 Under the hood, both paths rely on the same Configure primitives: open a hosted Configure handoff, keep tokens server-side, then read the profile. Web apps usually build the hosted URL directly. Spectrum message agents let the adapter own link delivery before the model handler runs.
 

@@ -2,8 +2,6 @@
 
 This example is a Spectrum message agent for iMessage/SMS. It keeps the normal Spectrum message loop and adds Configure identity, consent, profile context, and memory tools with `withConfigure`.
 
-Until `configure-spectrum` is published to npm, this example installs the packed preview tarball from [`vendor/`](./vendor/).
-
 ## Run it
 
 ```bash
