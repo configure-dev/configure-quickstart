@@ -48,11 +48,8 @@ for await (const [space, message] of app.messages) {
 
     const { profile } = await ctx.profile.read();
     const profileContext = profile.format({ guidelines: false }).trim();
-    const contextLabel = ctx.linked
-      ? "Approved Configure profile context for this sender:"
-      : "Developer-scoped Configure context for this sender. This is not federated cross-agent profile access:";
     const system = profileContext
-      ? `${STYLE}\n\n${contextLabel}\n${profileContext}\n\nUse Configure context selectively. Do not expose private facts unless they are needed for the user's request.`
+      ? `${STYLE}\n\n${profileContext}\n\nUse Configure context selectively. Do not expose private facts unless they are needed for the user's request.`
       : `${STYLE}\n\nNo Configure profile context is available for this sender yet. Do not claim personal context that is not present in the current conversation or tool results.`;
 
     // Give the model Configure's read / search / remember tools, and run the tool loop.
