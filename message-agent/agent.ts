@@ -22,7 +22,7 @@ const configureSpectrumOptions = {
   signIn: {
     displayName: "Configure",
     agentPhone: process.env.AGENT_PHONE_NUMBER || undefined,
-    linkMode: "auto" as const,
+    linkMode: "managed" as const,
   },
   connect: {
     mode: "intent" as const,
