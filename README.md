@@ -145,7 +145,7 @@ The secret key never leaves your server. The browser only ever holds the publish
   ───────                         ─────────────────              ──────────────────
   Continue with Configure ───────────▶ /login ──── signInUrl() ──────▶ phone + consent
                                                                        │
-  show profile  ◀──── profile.read() ◀── exchangeSignInCode(code) ◀────┘ redirect ?code=
+  show profile  ◀──── profile.read({ sections }) ◀── exchangeSignInCode(code) ◀────┘ redirect ?code=
 ```
 
 In a Spectrum message agent, `withConfigure()` wraps the existing message handler. Spectrum owns messaging, providers, webhooks, and delivery; Configure resolves identity, consent, and profile access before the agent replies.
