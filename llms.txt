@@ -11,7 +11,7 @@ This repo is the minimal integration: show the user a hosted link, get a token b
 - `sk_` keys are server-side only. `pk_` keys are browser-safe and only build the link. The model never sees raw tokens or user IDs.
 - Web apps: `signInUrl` → `exchangeSignInCode` (server) → `profile.read({ sections })`.
 - Message agents on Photon Spectrum: use `configure-spectrum` and `withConfigure` to resolve identity and profile context inside the existing Spectrum message handler. Use `signIn.linkMode: "managed"` so Configure owns message URL orchestration, and let the adapter send Configure sign-in links before the model handler runs.
-- For model context, use `profile.format()` as the normal context path, then Configure tool results for specifics. Use `configure_profile_search` for concrete memories, imported-source questions, and details that need exact source attribution. Never prompt with raw `JSON.stringify(profile)`.
+- For model context, use `profile.format()` as the normal context path, then Configure tool results for specifics. Use `configure_profile_search` for concrete memories, imported-source questions, and details that need exact source attribution. After a read-backed turn, call `profile.commit()` or `ctx.profile.commit()` with bounded user/assistant turn evidence. Never prompt with raw `JSON.stringify(profile)`.
 - Full skill: ./SKILL.md (hosted at https://configure.dev/skill.md)
 
 ## Default web path
@@ -20,7 +20,7 @@ This repo is the minimal integration: show the user a hosted link, get a token b
 2. Build the link: `configure.auth.signInUrl({ publishableKey, returnTo })`.
 3. Exchange the returned code server-side: `configure.auth.exchangeSignInCode(code)` → `{ token }`.
 4. Read approved orientation sections: `configure.profile({ token }).read({ sections: ["identity", "preferences", "summary"] })`.
-5. Use the profile in a personalized response.
+5. Use the profile in a personalized response, then call `profile.commit()` with bounded turn evidence.
 
 ## Examples in this repo
 

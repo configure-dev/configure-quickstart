@@ -58,7 +58,7 @@ const context = read.profile.format();
 
 For message agents on Photon Spectrum, use `configure-spectrum` and `withConfigure` with `signIn.linkMode: "managed"`. Spectrum owns messaging and delivery; Configure resolves identity, consent, profile runtime, and memory before the handler replies.
 
-Use `profile.format()` as the normal prompt context path. Keep Configure tools available and use `configure_profile_search` for concrete memories, imported-source questions such as "what does ChatGPT remember about me?", and details that need exact source attribution.
+Use `profile.format()` as the normal prompt context path. Keep Configure tools available and use `configure_profile_search` for concrete memories, imported-source questions such as "what does ChatGPT remember about me?", and details that need exact source attribution. After a read-backed turn, call `profile.commit()` or `ctx.profile.commit()` with bounded user/assistant turn evidence.
 
 For tight prompt budgets, choose narrower `sections` and keep `configure_profile_search` available for source-specific follow-up retrieval. Do not teach broad reads plus local prompt chopping as the default personalization path.
 

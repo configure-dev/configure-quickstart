@@ -85,6 +85,7 @@ for await (const [space, message] of app.messages) {
     });
     const profileOverview = profile.format({ guidelines: false });
     // Give your model the formatted context plus ctx.profile.tools(); use search for specifics.
+    // After replying from Configure-backed context, call ctx.profile.commit() with bounded turn evidence.
   });
 }
 ```
@@ -100,7 +101,7 @@ const read = await configure.profile({ token }).read({
 });                                                                // approved orientation context
 ```
 
-Choose `sections` when the app knows the orientation it needs, then use `profile.format()` as the normal prompt context path. Keep `configure_profile_search` available for concrete memories, imported-source questions, or details that need exact source attribution. For tight prompt budgets, choose narrower sections instead of broad reads plus local prompt chopping.
+Choose `sections` when the app knows the orientation it needs, then use `profile.format()` as the normal prompt context path. Keep `configure_profile_search` available for concrete memories, imported-source questions, or details that need exact source attribution. After a read-backed turn, call `profile.commit()` or `ctx.profile.commit()` with bounded user/assistant turn evidence. For tight prompt budgets, choose narrower sections instead of broad reads plus local prompt chopping.
 
 Configure resolves the user server-side before profile access. In Spectrum message agents, `withConfigure()` owns the message-auth handoff so the model does not generate Configure sign-in links.
 

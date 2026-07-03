@@ -57,37 +57,52 @@ for await (const [space, message] of app.messages) {
     // Give the model Configure's read / search / remember tools, and run the tool loop.
     const tools = ctx.profile.tools() as unknown as Anthropic.Tool[];
     const messages: Anthropic.MessageParam[] = [{ role: "user", content: ctx.text }];
+    let finalResponse = "";
 
-    for (let hop = 0; hop < 4; hop += 1) {
-      const reply = await model.messages.create({
-        model: modelName,
-        max_tokens: 500,
-        system,
-        tools,
-        messages,
-      });
-      messages.push({ role: "assistant", content: reply.content });
+    try {
+      for (let hop = 0; hop < 4; hop += 1) {
+        const reply = await model.messages.create({
+          model: modelName,
+          max_tokens: 500,
+          system,
+          tools,
+          messages,
+        });
+        messages.push({ role: "assistant", content: reply.content });
 
-      const toolUses = reply.content.filter((c): c is Anthropic.ToolUseBlock => c.type === "tool_use");
-      if (toolUses.length === 0) {
-        const out = reply.content.map((c) => (c.type === "text" ? c.text : "")).join("").trim();
-        if (!out || out === "[SKIP]") return;
-        const bursts = out.split(/\n?---\n?/).map((s) => s.trim()).filter(Boolean).slice(0, 2);
-        for (let i = 0; i < bursts.length; i += 1) {
-          if (i > 0) await sleep(900 + Math.floor(Math.random() * 2100));
-          await message.reply(bursts[i]);
+        const toolUses = reply.content.filter((c): c is Anthropic.ToolUseBlock => c.type === "tool_use");
+        if (toolUses.length === 0) {
+          const out = reply.content.map((c) => (c.type === "text" ? c.text : "")).join("").trim();
+          if (!out || out === "[SKIP]") return;
+          finalResponse = out;
+          const bursts = out.split(/\n?---\n?/).map((s) => s.trim()).filter(Boolean).slice(0, 2);
+          for (let i = 0; i < bursts.length; i += 1) {
+            if (i > 0) await sleep(900 + Math.floor(Math.random() * 2100));
+            await message.reply(bursts[i]);
+          }
+          return;
         }
-        return;
-      }
 
-      const toolResults: Anthropic.ToolResultBlockParam[] = await Promise.all(
-        toolUses.map(async (call) => ({
-          type: "tool_result" as const,
-          tool_use_id: call.id,
-          content: safeJson(await ctx.profile.executeTool({ name: call.name, arguments: asRecord(call.input) })),
-        })),
-      );
-      messages.push({ role: "user", content: toolResults });
+        const toolResults: Anthropic.ToolResultBlockParam[] = await Promise.all(
+          toolUses.map(async (call) => ({
+            type: "tool_result" as const,
+            tool_use_id: call.id,
+            content: safeJson(await ctx.profile.executeTool({ name: call.name, arguments: asRecord(call.input) })),
+          })),
+        );
+        messages.push({ role: "user", content: toolResults });
+      }
+    } finally {
+      if (finalResponse) {
+        ctx.profile.commit({
+          messages: [
+            { role: "user", content: ctx.text },
+            { role: "assistant", content: finalResponse },
+          ],
+        }).catch((error) => {
+          console.warn("[configure] profile commit failed", { error: error instanceof Error ? error.name : "unknown" });
+        });
+      }
     }
   });
 }
