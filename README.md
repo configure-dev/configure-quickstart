@@ -100,7 +100,7 @@ const read = await configure.profile({ token }).read({
 });                                                                // approved orientation context
 ```
 
-Choose `sections` when the app knows the orientation it needs, then use `profile.format()` as the normal prompt context path. Keep `configure_profile_search` available for concrete memories, imported-source questions, or details that need exact source attribution. If you set an explicit prompt budget, clamp locally while older SDK types are still in circulation.
+Choose `sections` when the app knows the orientation it needs, then use `profile.format()` as the normal prompt context path. Keep `configure_profile_search` available for concrete memories, imported-source questions, or details that need exact source attribution. For tight prompt budgets, choose narrower sections instead of broad reads plus local prompt chopping.
 
 Configure resolves the user server-side before profile access. In Spectrum message agents, `withConfigure()` owns the message-auth handoff so the model does not generate Configure sign-in links.
 
