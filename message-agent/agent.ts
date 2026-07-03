@@ -49,15 +49,12 @@ for await (const [space, message] of app.messages) {
   await configureSpectrum.handle(space, message, async (ctx) => {
     if (!ctx.text) return;
 
-    const { profile } = await ctx.profile.read({
-      sections: ["identity", "preferences", "summary"],
-    });
-    const profileContext = profile.format({ guidelines: false }).trim();
-    const system = profileContext
-      ? `${STYLE}\n\n${profileContext}\n\nUse Configure context selectively. For concrete memories or source-specific questions, call Configure search tools. Do not expose private facts unless they are needed for the user's request.`
-      : `${STYLE}\n\nNo Configure profile context is available for this sender yet. Do not claim personal context that is not present in the current conversation or tool results.`;
+    let configureReadUsed = false;
+    const system = `${STYLE}\n\nUse Configure tools when profile context, memories, connected data, or durable memory writes would help. Do not claim personal context that is not present in the current conversation or tool results.`;
 
-    // Give the model Configure profile tools plus the connector/action capabilities this app supports.
+    // Give the model the Configure capabilities this hosted surface supports. Visibility is not
+    // authorization: ctx.profile.executeTool enforces linked state, connector state, permissions,
+    // scopes, approval, and recovery.
     const tools = ctx.profile.tools({
       connectors: CONFIGURE_CONNECTORS,
       actions: CONFIGURE_ACTIONS,
@@ -89,17 +86,25 @@ for await (const [space, message] of app.messages) {
           return;
         }
 
-        const toolResults: Anthropic.ToolResultBlockParam[] = await Promise.all(
-          toolUses.map(async (call) => ({
+        const toolResults: Anthropic.ToolResultBlockParam[] = [];
+        for (const call of toolUses) {
+          const content = await executeConfigureTool(ctx, call);
+          if (isReadBackedConfigureTool(call.name) && !isConfigureFailure(content)) {
+            configureReadUsed = true;
+          }
+          toolResults.push({
             type: "tool_result" as const,
             tool_use_id: call.id,
-            content: safeJson(await ctx.profile.executeTool({ name: call.name, arguments: asRecord(call.input) })),
-          })),
-        );
+            content,
+          });
+        }
         messages.push({ role: "user", content: toolResults });
       }
+    } catch (error) {
+      if (error instanceof ConfigureRecoverySent) return;
+      throw error;
     } finally {
-      if (finalResponse) {
+      if (finalResponse && configureReadUsed) {
         ctx.profile.commit({
           messages: [
             { role: "user", content: ctx.text },
@@ -115,6 +120,116 @@ for await (const [space, message] of app.messages) {
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+class ConfigureRecoverySent extends Error {
+  constructor() {
+    super("Configure recovery link sent");
+  }
+}
+
+type ConfigureToolRuntime = {
+  profile: {
+    executeTool(toolCall: { name: string; arguments?: Record<string, unknown> }): Promise<unknown>;
+  };
+  replyWithSignIn(): Promise<void>;
+  replyWithReconnect(options?: { connectors?: string[]; message?: string }): Promise<void>;
+};
+
+type ConfigureToolFailure = {
+  error: "configure_tool_failed";
+  tool: string;
+  message: string;
+  code?: string;
+  type?: string;
+  suggestedAction?: string;
+  requestId?: string;
+  retryable?: boolean;
+  connector?: string;
+  recovery?: "signin" | "reconnect" | "permissions";
+};
+
+async function executeConfigureTool(ctx: ConfigureToolRuntime, call: Anthropic.ToolUseBlock): Promise<string> {
+  try {
+    const result = await ctx.profile.executeTool({ name: call.name, arguments: asRecord(call.input) });
+    return safeJson(result);
+  } catch (error) {
+    const failure = configureToolFailure(call.name, error);
+    if (failure.recovery === "signin") {
+      await ctx.replyWithSignIn();
+      throw new ConfigureRecoverySent();
+    }
+    if (failure.recovery === "reconnect" && failure.connector) {
+      await ctx.replyWithReconnect({
+        connectors: [failure.connector],
+        message: `Connect ${connectorLabel(failure.connector)} to continue: {url}`,
+      });
+      throw new ConfigureRecoverySent();
+    }
+    if (failure.recovery === "permissions" && failure.connector) {
+      await ctx.replyWithReconnect({
+        connectors: [failure.connector],
+        message: `Review ${connectorLabel(failure.connector)} permissions to continue: {url}`,
+      });
+      throw new ConfigureRecoverySent();
+    }
+    return safeJson(failure);
+  }
+}
+
+function isReadBackedConfigureTool(name: string): boolean {
+  return name === "configure_profile_read" || name === "configure_profile_search";
+}
+
+function isConfigureFailure(content: string): boolean {
+  try {
+    const parsed = JSON.parse(content);
+    return isRecord(parsed) && parsed.error === "configure_tool_failed";
+  } catch {
+    return false;
+  }
+}
+
+function configureToolFailure(tool: string, error: unknown): ConfigureToolFailure {
+  const code = stringProp(error, "code");
+  const suggestedAction = stringProp(error, "suggestedAction");
+  const connector = connectorForTool(tool);
+  const failure: ConfigureToolFailure = {
+    error: "configure_tool_failed",
+    tool,
+    message: error instanceof Error ? error.message : "Configure tool failed",
+    ...(code ? { code } : {}),
+    ...(stringProp(error, "type") ? { type: stringProp(error, "type") } : {}),
+    ...(suggestedAction ? { suggestedAction } : {}),
+    ...(stringProp(error, "requestId") ? { requestId: stringProp(error, "requestId") } : {}),
+    ...(booleanProp(error, "retryable") !== undefined ? { retryable: booleanProp(error, "retryable") } : {}),
+    ...(connector ? { connector } : {}),
+  };
+  if (code === "AUTH_REQUIRED") failure.recovery = "signin";
+  if ((code === "TOOL_NOT_CONNECTED" || suggestedAction === "connect_tool") && connector) {
+    failure.recovery = "reconnect";
+  }
+  if (suggestedAction === "check_permissions") failure.recovery = "permissions";
+  return failure;
+}
+
+function connectorForTool(tool: string): string | undefined {
+  if (tool.startsWith("configure_gmail_") || tool === "configure_email_send") return "gmail";
+  if (tool.startsWith("configure_calendar_")) return "calendar";
+  if (tool.startsWith("configure_drive_")) return "drive";
+  if (tool.startsWith("configure_notion_")) return "notion";
+  if (tool.startsWith("configure_sheets_")) return "sheets";
+}
+
+function connectorLabel(connector: string): string {
+  const labels: Record<string, string> = {
+    gmail: "Gmail",
+    calendar: "Calendar",
+    drive: "Drive",
+    notion: "Notion",
+    sheets: "Google Sheets",
+  };
+  return labels[connector] || connector;
 }
 
 type ConfigureEvent = {
@@ -135,7 +250,7 @@ const SAFE_EVENT_KEYS = new Set([
   "message_url_mode",
   "return_line_present",
   "source",
-  "subject_token_present",
+  "message_sender_proof_present",
   "tool_count",
 ]);
 
@@ -189,4 +304,15 @@ function safeJson(value: unknown): string {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
+}
+
+function stringProp(value: unknown, key: string): string | undefined {
+  if (!isRecord(value)) return undefined;
+  const candidate = value[key];
+  return typeof candidate === "string" && candidate ? candidate : undefined;
+}
+
+function booleanProp(value: unknown, key: string): boolean | undefined {
+  if (!isRecord(value)) return undefined;
+  return typeof value[key] === "boolean" ? value[key] : undefined;
 }

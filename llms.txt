@@ -2,16 +2,16 @@
 
 Configure is the identity and personalization layer for AI agents. A user brings one Memory Profile — identity, preferences, connected tools, and memories — into any product that integrates the SDK. No new accounts, no re-onboarding, no reauthorizing connected services.
 
-This repo is the minimal integration: show the user a hosted link, get a token back, expose Configure tools, and optionally read approved orientation context.
+This repo is the minimal integration: show the user a hosted link, get a token back, expose Configure tools, and use host-side reads only for app-owned UI, inspection, or explicit context slots.
 
 ## Instructions for AI agents
 
-- To integrate a web app: install `configure`, run `npx configure setup`, add Sign in with Configure, create `configure.profile({ token })`, expose `profile.tools({ connectors, actions })` when the app supports those hosted capabilities, and optionally format approved orientation context. The `web/` example uses `personalize()` as a small web-server convenience.
+- To integrate a web app: install `configure`, run `npx configure setup`, add Sign in with Configure, create `configure.profile({ token })`, expose `profile.tools({ connectors, actions })` for connector/action capabilities requested by the hosted/product surface and supported by the app, and route `configure_*` calls to `profile.executeTool()`. The `web/` example uses `personalize()` as a small web-server convenience.
 - Use the hosted `sign-in.me` link. Never build a raw phone-OTP flow — Configure's page handles verification and consent.
 - `sk_` keys are server-side only. `pk_` keys are browser-safe and only build the link. The model never sees raw tokens or user IDs.
-- Web apps: `signInUrl` → `exchangeSignInCode` (server) → `configure.profile({ token })` → `profile.tools({ connectors, actions })` plus optional `profile.read({ sections })`.
+- Web apps: `signInUrl` → `exchangeSignInCode` (server) → `configure.profile({ token })` → `profile.tools({ connectors, actions })` for app-supported capabilities → route `configure_*` calls through `profile.executeTool()`.
 - Message agents on Photon Spectrum: use `configure-spectrum` and `withConfigure` to resolve identity and profile context inside the existing Spectrum message handler. Use `signIn.linkMode: "managed"` so Configure owns message URL orchestration, and let the adapter send Configure sign-in links before the model handler runs.
-- For model context, expose Configure tools as the normal model-loop path. Use optional `profile.format()` for first-turn orientation, then `configure_profile_read` / `configure_profile_search` for overview, concrete memories, imported-source questions, and exact source attribution. After a read-backed turn, call `profile.commit()` or `ctx.profile.commit()` with bounded user/assistant turn evidence. Never prompt with raw `JSON.stringify(profile)`.
+- For model context, expose Configure tools as the normal model-loop path. Use `configure_profile_read` / `configure_profile_search` for overview, concrete memories, imported-source questions, and exact source attribution. Host-side `profile.format()` is only for app-owned UI, inspection, or explicit context slots. After a read-backed turn, call `profile.commit()` or `ctx.profile.commit()` with bounded user/assistant turn evidence. Never prompt with raw `JSON.stringify(profile)`.
 - Full skill: ./SKILL.md (hosted at https://configure.dev/skill.md)
 
 ## Default web path
@@ -19,8 +19,10 @@ This repo is the minimal integration: show the user a hosted link, get a token b
 1. `npm install configure` and `npx configure setup` — writes `CONFIGURE_API_KEY`, `CONFIGURE_PUBLISHABLE_KEY`, `CONFIGURE_AGENT` to `.env`.
 2. Build the link: `configure.auth.signInUrl({ publishableKey, returnTo })`.
 3. Exchange the returned code server-side: `configure.auth.exchangeSignInCode(code)` → `{ token }`.
-4. Create `const profile = configure.profile({ token })`, expose `profile.tools({ connectors, actions })`, and optionally read approved orientation sections: `profile.read({ sections: ["identity", "preferences", "summary"] })`.
-5. Use Configure tool results and optional profile context in a personalized response, then call `profile.commit()` with bounded turn evidence.
+4. Create `const profile = configure.profile({ token })`, expose `profile.tools({ connectors, actions })` for app-supported capabilities, and route `configure_*` calls through `profile.executeTool()`.
+5. Use Configure tool results and optional profile context in a personalized response. If the turn used `configure_profile_read` or `configure_profile_search`, call `profile.commit()` with bounded turn evidence.
+
+Tool visibility means hosted/app capability, not user authorization. Expose supported connector/action tools, then let `profile.executeTool()` and hosted surfaces enforce linked state, connector state, permissions, scopes, approval, and reconnect recovery. If a connector/action is unavailable, send the hosted connect, reconnect, permissions, or approval link.
 
 ## Examples in this repo
 

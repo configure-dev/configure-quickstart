@@ -83,32 +83,31 @@ const configureSpectrum = withConfigure({
 
 for await (const [space, message] of app.messages) {
   await configureSpectrum.handle(space, message, async (ctx) => {
-    const { profile } = await ctx.profile.read({
-      sections: ["identity", "preferences", "summary"],
-    });
-    const profileOverview = profile.format({ guidelines: false });
     const tools = ctx.profile.tools({
       connectors: ["gmail", "calendar"],
       actions: ["email.send", "calendar.create_event"],
     });
-    // Give your model Configure tools plus optional formatted orientation; use search for specifics.
-    // After replying from Configure-backed context, call ctx.profile.commit() with bounded turn evidence.
+    // Give your model Configure tools and route configure_* calls to ctx.profile.executeTool.
+    // Tool visibility means hosted/app capability; executeTool enforces user state and recovery.
+    // If the turn used configure_profile_read/search, call ctx.profile.commit() with bounded evidence.
   });
 }
 ```
 
-Under the hood, both paths rely on the same Configure primitives: open a hosted Configure handoff, keep tokens server-side, expose Configure tools in the model loop, and optionally read and format approved orientation context. Web apps usually build the hosted URL directly. Spectrum message agents let the adapter own link delivery before the model handler runs.
+Under the hood, both paths rely on the same Configure primitives: open a hosted Configure handoff, keep tokens server-side, expose Configure tools in the model loop, route Configure tool calls, and commit after read-backed turns. Web apps usually build the hosted URL directly. Spectrum message agents let the adapter own link delivery before the model handler runs.
 
 ```ts
 const configure = new Configure({ apiKey, agent });
 const url = configure.auth.signInUrl({ publishableKey, returnTo }); // hosted web/account-link handoff
 const { token } = await configure.auth.exchangeSignInCode(code);    // exchange (sk_)
-const read = await configure.profile({ token }).read({
-  sections: ["identity", "preferences", "summary"],
-});                                                                // approved orientation context
+const profile = configure.profile({ token });
+const tools = profile.tools({
+  connectors: ["gmail", "calendar"],
+  actions: ["email.send", "calendar.create_event"],
+});
 ```
 
-Expose Configure tools as the normal model-loop path, and choose `sections` when the app wants an optional first-turn orientation packet. Keep `configure_profile_read` and `configure_profile_search` available for overview, concrete memories, imported-source questions, or details that need exact source attribution. After a read-backed turn, call `profile.commit()` or `ctx.profile.commit()` with bounded user/assistant turn evidence. For tight prompt budgets, choose narrower sections instead of broad reads plus local prompt chopping.
+Expose Configure tools as the normal model-loop path. Keep `configure_profile_read` and `configure_profile_search` available for overview, concrete memories, imported-source questions, or details that need exact source attribution. Expose connector and action tools when the hosted/product surface requested those capabilities and the app supports them. `profile.executeTool()` still enforces linked state, connector state, permissions, scopes, approval, and reconnect recovery; if a connector/action is unavailable, send the hosted connect, reconnect, permissions, or approval link. After a read-backed turn, call `profile.commit()` or `ctx.profile.commit()` with bounded user/assistant turn evidence. Host-side `profile.read({ sections })` plus `profile.format()` is available for app-owned UI, inspection, or explicit context slots; it is not required for the normal model loop.
 
 Configure resolves the user server-side before profile access. In Spectrum message agents, `withConfigure()` owns the message-auth handoff so the model does not generate Configure sign-in links.
 

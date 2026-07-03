@@ -16,7 +16,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "configure": "^1.1.14",
+    "configure": "^1.1.16",
     "dotenv": "^17.0.0"
   },
   "devDependencies": {
