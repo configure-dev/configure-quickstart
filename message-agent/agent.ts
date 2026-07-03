@@ -7,6 +7,8 @@ import { withConfigure } from "configure-spectrum";
 // Spectrum carries messages, Configure resolves user context, and your model generates replies.
 const model = new Anthropic({ apiKey: requireEnv("MODEL_API_KEY") });
 const modelName = requireEnv("MODEL_NAME");
+const CONFIGURE_CONNECTORS = ["gmail", "calendar"] as ["gmail", "calendar"];
+const CONFIGURE_ACTIONS = ["email.send", "calendar.create_event"] as ["email.send", "calendar.create_event"];
 
 const app = await Spectrum({
   projectId: process.env.PHOTON_PROJECT_ID!,
@@ -23,6 +25,7 @@ const configureSpectrumOptions = {
     displayName: "Configure",
     agentPhone: process.env.AGENT_PHONE_NUMBER || undefined,
     linkMode: "managed" as const,
+    connectors: CONFIGURE_CONNECTORS,
   },
   connect: {
     mode: "intent" as const,
@@ -54,8 +57,11 @@ for await (const [space, message] of app.messages) {
       ? `${STYLE}\n\n${profileContext}\n\nUse Configure context selectively. For concrete memories or source-specific questions, call Configure search tools. Do not expose private facts unless they are needed for the user's request.`
       : `${STYLE}\n\nNo Configure profile context is available for this sender yet. Do not claim personal context that is not present in the current conversation or tool results.`;
 
-    // Give the model Configure's read / search / remember tools, and run the tool loop.
-    const tools = ctx.profile.tools() as unknown as Anthropic.Tool[];
+    // Give the model Configure profile tools plus the connector/action capabilities this app supports.
+    const tools = ctx.profile.tools({
+      connectors: CONFIGURE_CONNECTORS,
+      actions: CONFIGURE_ACTIONS,
+    }) as unknown as Anthropic.Tool[];
     const messages: Anthropic.MessageParam[] = [{ role: "user", content: ctx.text }];
     let finalResponse = "";
 

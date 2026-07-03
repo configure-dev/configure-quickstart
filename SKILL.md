@@ -49,8 +49,14 @@ const url = configure.auth.signInUrl({ publishableKey, returnTo });
 // 3. Exchange it server-side (sk_).
 const { token } = await configure.auth.exchangeSignInCode(code);
 
-// 4. Read approved orientation context and personalize.
-const read = await configure.profile({ token }).read({
+// 4. Create the profile runtime, expose Configure tools, and optionally
+//    pre-read approved orientation context for first-turn UX.
+const profile = configure.profile({ token });
+const tools = profile.tools({
+  connectors: ["gmail", "calendar"],
+  actions: ["email.send", "calendar.create_event"],
+});
+const read = await profile.read({
   sections: ["identity", "preferences", "summary"],
 });
 const context = read.profile.format();
@@ -58,7 +64,7 @@ const context = read.profile.format();
 
 For message agents on Photon Spectrum, use `configure-spectrum` and `withConfigure` with `signIn.linkMode: "managed"`. Spectrum owns messaging and delivery; Configure resolves identity, consent, profile runtime, and memory before the handler replies.
 
-Use `profile.format()` as the normal prompt context path. Keep Configure tools available and use `configure_profile_search` for concrete memories, imported-source questions such as "what does ChatGPT remember about me?", and details that need exact source attribution. After a read-backed turn, call `profile.commit()` or `ctx.profile.commit()` with bounded user/assistant turn evidence.
+Use Configure tools as the normal model-loop path. `profile.format()` renders an optional orientation packet; use `configure_profile_read` and `configure_profile_search` for overview, concrete memories, imported-source questions such as "what does ChatGPT remember about me?", and details that need exact source attribution. After a read-backed turn, call `profile.commit()` or `ctx.profile.commit()` with bounded user/assistant turn evidence.
 
 For tight prompt budgets, choose narrower `sections` and keep `configure_profile_search` available for source-specific follow-up retrieval. Do not teach broad reads plus local prompt chopping as the default personalization path.
 
