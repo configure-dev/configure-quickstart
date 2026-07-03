@@ -20,7 +20,9 @@ On every inbound message, `withConfigure`:
 2. **Sends sign-in links outside the model path** when the user asks to connect. Configure handles verification and consent, then the adapter stops the turn before the model runs.
 3. **Provides profile runtime** through `ctx.profile`, including read, search, remember, and tool execution.
 
-The handler gives its model Configure tools, so the agent can read and remember user context before replying. The model does not generate Configure sign-in URLs; `withConfigure` handles that as runtime policy. If a Configure-backed connector later needs repair, application code can send a targeted hosted reconnect link with `ctx.replyWithReconnect({ connectors: ["gmail"] })` instead of teaching the model a URL format. The sample uses one model SDK, but the Configure and Spectrum integration does not depend on any specific model provider.
+The handler gives its model Configure tools, so the agent can read and remember user context before replying. It formats a compact Configure context packet with `profile.format({ guidelines: false })` instead of putting the raw profile response in the prompt. Linked users get approved Configure profile context; unlinked senders can still have developer-scoped context created by this app, but that is not federated cross-agent access.
+
+The model does not generate Configure sign-in URLs; `withConfigure` handles that as runtime policy. If a Configure-backed connector later needs repair, application code can send a targeted hosted reconnect link with `ctx.replyWithReconnect({ connectors: ["gmail"] })` instead of teaching the model a URL format. The sample uses one model SDK, but the Configure and Spectrum integration does not depend on any specific model provider.
 
 The sample also attaches `onEvent` to show where production agents should emit their own privacy-safe journey telemetry. Keep those events redacted: log states, counts, modes, and reason codes, not raw phone numbers, tokens, URLs, message bodies, connector payloads, or profile facts.
 

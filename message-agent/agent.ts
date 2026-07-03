@@ -47,9 +47,13 @@ for await (const [space, message] of app.messages) {
     if (!ctx.text) return;
 
     const { profile } = await ctx.profile.read();
-    const system = ctx.linked || profileHasData(profile)
-      ? `${STYLE}\n\nWhat Configure already remembers about this user:\n${JSON.stringify(profile, null, 2)}`
-      : `${STYLE}\n\nNo approved Configure profile is available for this sender yet. Do not claim personal context that is not present in the current conversation or tool results.`;
+    const profileContext = profile.format({ guidelines: false }).trim();
+    const contextLabel = ctx.linked
+      ? "Approved Configure profile context for this sender:"
+      : "Developer-scoped Configure context for this sender. This is not federated cross-agent profile access:";
+    const system = profileContext
+      ? `${STYLE}\n\n${contextLabel}\n${profileContext}\n\nUse Configure context selectively. Do not expose private facts unless they are needed for the user's request.`
+      : `${STYLE}\n\nNo Configure profile context is available for this sender yet. Do not claim personal context that is not present in the current conversation or tool results.`;
 
     // Give the model Configure's read / search / remember tools, and run the tool loop.
     const tools = ctx.profile.tools() as unknown as Anthropic.Tool[];
@@ -161,11 +165,6 @@ function safeJson(value: unknown): string {
   } catch {
     return String(value);
   }
-}
-
-function profileHasData(profile: unknown): boolean {
-  if (!isRecord(profile) || !isRecord(profile.identity)) return false;
-  return Object.values(profile.identity).some((v) => v != null && v !== "");
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
