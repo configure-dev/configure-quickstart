@@ -80,27 +80,23 @@ const configureSpectrum = withConfigure({
 
 for await (const [space, message] of app.messages) {
   await configureSpectrum.handle(space, message, async (ctx) => {
-    const { profile } = await ctx.profile.read({
-      sections: ["identity", "preferences", "summary"],
-    });
-    const profileOverview = profile.format({ guidelines: false, maxChars: 6_000 });
-    // Give your model the overview plus ctx.profile.tools(); use search for specifics.
+    const { profile } = await ctx.profile.read();
+    const profileOverview = profile.format({ guidelines: false });
+    // Give your model the formatted context plus ctx.profile.tools(); use search for specifics.
   });
 }
 ```
 
-Under the hood, both paths rely on the same Configure primitives: open a hosted Configure handoff, keep tokens server-side, then read a compact profile overview. Web apps usually build the hosted URL directly. Spectrum message agents let the adapter own link delivery before the model handler runs.
+Under the hood, both paths rely on the same Configure primitives: open a hosted Configure handoff, keep tokens server-side, then read and format approved profile context. Web apps usually build the hosted URL directly. Spectrum message agents let the adapter own link delivery before the model handler runs.
 
 ```ts
 const configure = new Configure({ apiKey, agent });
 const url = configure.auth.signInUrl({ publishableKey, returnTo }); // hosted web/account-link handoff
 const { token } = await configure.auth.exchangeSignInCode(code);    // exchange (sk_)
-const read = await configure.profile({ token }).read({
-  sections: ["identity", "preferences", "summary"],
-});                                                                // compact overview
+const read = await configure.profile({ token }).read();             // approved profile context
 ```
 
-Use `profile.format({ maxChars })` for prompt orientation and `configure_profile_search` for concrete memories, imported-source questions, or details that need completeness/source attribution. Until every install has the SDK version with `maxChars` typed, clamp formatted context to the same budget before adding it to a prompt.
+Use `profile.format()` as the normal prompt context path and keep `configure_profile_search` available for concrete memories, imported-source questions, or details that need exact source attribution. If you set a prompt budget with `maxChars`, clamp locally while older SDK types are still in circulation.
 
 Configure resolves the user server-side before profile access. In Spectrum message agents, `withConfigure()` owns the message-auth handoff so the model does not generate Configure sign-in links.
 

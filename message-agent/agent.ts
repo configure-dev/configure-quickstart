@@ -41,18 +41,15 @@ const STYLE =
   "anything new the user tells you about themselves (their name, preferences, what they're working on). " +
   "Texting style: SHORT and human — at most two brief messages; if you send two, separate them with a line " +
   "that is only ---. Never send a wall of text. If a group message clearly isn't for you, reply [SKIP].";
-const PROFILE_OVERVIEW_CHARS = 6_000;
 
 for await (const [space, message] of app.messages) {
   await configureSpectrum.handle(space, message, async (ctx) => {
     if (!ctx.text) return;
 
-    const { profile } = await ctx.profile.read({
-      sections: ["identity", "preferences", "summary"],
-    });
-    const profileContext = truncateContext(profile.format({ guidelines: false }).trim(), PROFILE_OVERVIEW_CHARS);
+    const { profile } = await ctx.profile.read();
+    const profileContext = profile.format({ guidelines: false }).trim();
     const system = profileContext
-      ? `${STYLE}\n\n${profileContext}\n\nUse this Configure overview selectively. For concrete memories or source-specific questions, call Configure search tools instead of assuming the overview is complete. Do not expose private facts unless they are needed for the user's request.`
+      ? `${STYLE}\n\n${profileContext}\n\nUse Configure context selectively. For concrete memories or source-specific questions, call Configure search tools. Do not expose private facts unless they are needed for the user's request.`
       : `${STYLE}\n\nNo Configure profile context is available for this sender yet. Do not claim personal context that is not present in the current conversation or tool results.`;
 
     // Give the model Configure's read / search / remember tools, and run the tool loop.
@@ -95,11 +92,6 @@ for await (const [space, message] of app.messages) {
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-function truncateContext(value: string, maxChars: number): string {
-  if (value.length <= maxChars) return value;
-  return `${value.slice(0, maxChars - 3).trimEnd()}...`;
 }
 
 type ConfigureEvent = {
