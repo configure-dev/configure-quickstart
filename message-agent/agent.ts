@@ -14,7 +14,7 @@ const app = await Spectrum({
   providers: [imessage.config()],
 });
 
-const configureSpectrum = withConfigure({
+const configureSpectrumOptions = {
   apiKey: process.env.CONFIGURE_API_KEY!,
   publishableKey: process.env.CONFIGURE_PUBLISHABLE_KEY!,
   agent: process.env.CONFIGURE_AGENT!,
@@ -22,15 +22,17 @@ const configureSpectrum = withConfigure({
   signIn: {
     displayName: "Configure",
     agentPhone: process.env.AGENT_PHONE_NUMBER || undefined,
-    linkMode: "auto",
+    linkMode: "auto" as const,
   },
   connect: {
-    mode: "intent",
+    mode: "intent" as const,
     sendOnce: true,
-    behavior: "send-and-stop",
+    behavior: "send-and-stop" as const,
     message: "Connect your Configure profile: {url}",
   },
-});
+  onEvent: logConfigureEvent,
+};
+const configureSpectrum = withConfigure(configureSpectrumOptions);
 
 const STYLE =
   "You are the assistant behind Configure, demoing the Configure x Photon partnership over iMessage. " +
@@ -89,6 +91,58 @@ for await (const [space, message] of app.messages) {
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+type ConfigureEvent = {
+  event?: string;
+  channel?: string;
+  identityState?: string;
+  actionState?: string;
+  outcome?: string;
+  reason?: string;
+  properties?: Record<string, unknown>;
+};
+
+const REDACTED_EVENT_KEY_RE = /(^|_)(phone|otp|token|receipt|email|message|query|prompt|preview|text|body|raw|secret|password|authorization|url|return_to|returnto|key)($|_)/i;
+const SAFE_EVENT_KEYS = new Set([
+  "connector_count",
+  "fallback_reason",
+  "link_mode",
+  "message_url_mode",
+  "return_line_present",
+  "source",
+  "subject_token_present",
+  "tool_count",
+]);
+
+function logConfigureEvent(event: ConfigureEvent): void {
+  console.info("[configure] adapter event", {
+    event: event.event,
+    channel: event.channel,
+    identityState: event.identityState,
+    actionState: event.actionState,
+    outcome: event.outcome,
+    reason: event.reason,
+    properties: sanitizeEventProperties(event.properties || {}),
+  });
+}
+
+function sanitizeEventProperties(properties: Record<string, unknown>): Record<string, unknown> {
+  const safe: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(properties)) {
+    const normalizedKey = key.replace(/[A-Z]/g, (match) => `_${match.toLowerCase()}`).toLowerCase();
+    const safeAggregate = normalizedKey.startsWith("has_")
+      || normalizedKey.endsWith("_count")
+      || normalizedKey.endsWith("_present")
+      || /(^|_)(duration_ms|elapsed_ms|latency_ms|attempt_count|status_code)$/.test(normalizedKey);
+    if (!SAFE_EVENT_KEYS.has(normalizedKey) && !safeAggregate && REDACTED_EVENT_KEY_RE.test(normalizedKey)) continue;
+    if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
+      safe[key] = value;
+    } else if (Array.isArray(value)) {
+      safe[key] = value.filter((item) => typeof item === "string").slice(0, 20);
+    }
+  }
+  return safe;
 }
 
 function requireEnv(name: string): string {
