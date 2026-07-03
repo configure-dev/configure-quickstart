@@ -60,7 +60,7 @@ For message agents on Photon Spectrum, use `configure-spectrum` and `withConfigu
 
 Use `profile.format()` as the normal prompt context path. Keep Configure tools available and use `configure_profile_search` for concrete memories, imported-source questions such as "what does ChatGPT remember about me?", and details that need exact source attribution.
 
-If you set an explicit prompt budget and the installed SDK types do not yet include `maxChars`, clamp the formatted string locally before putting it in the prompt.
+For tight prompt budgets, choose narrower `sections` and keep `configure_profile_search` available for source-specific follow-up retrieval. Do not teach broad reads plus local prompt chopping as the default personalization path.
 
 ## Definition of done
 
