@@ -75,6 +75,7 @@ const configureSpectrum = withConfigure({
   publishableKey: process.env.CONFIGURE_PUBLISHABLE_KEY!,
   agent: process.env.CONFIGURE_AGENT!,
   store: withConfigure.localStore(),
+  signIn: { linkMode: "managed" },
 });
 
 for await (const [space, message] of app.messages) {
