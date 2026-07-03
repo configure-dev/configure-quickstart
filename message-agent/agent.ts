@@ -46,7 +46,9 @@ for await (const [space, message] of app.messages) {
   await configureSpectrum.handle(space, message, async (ctx) => {
     if (!ctx.text) return;
 
-    const { profile } = await ctx.profile.read();
+    const { profile } = await ctx.profile.read({
+      sections: ["identity", "preferences", "summary"],
+    });
     const profileContext = profile.format({ guidelines: false }).trim();
     const system = profileContext
       ? `${STYLE}\n\n${profileContext}\n\nUse Configure context selectively. For concrete memories or source-specific questions, call Configure search tools. Do not expose private facts unless they are needed for the user's request.`

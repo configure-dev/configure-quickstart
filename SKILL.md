@@ -49,8 +49,10 @@ const url = configure.auth.signInUrl({ publishableKey, returnTo });
 // 3. Exchange it server-side (sk_).
 const { token } = await configure.auth.exchangeSignInCode(code);
 
-// 4. Read approved profile context and personalize.
-const read = await configure.profile({ token }).read();
+// 4. Read approved orientation context and personalize.
+const read = await configure.profile({ token }).read({
+  sections: ["identity", "preferences", "summary"],
+});
 const context = read.profile.format();
 ```
 
@@ -58,14 +60,14 @@ For message agents on Photon Spectrum, use `configure-spectrum` and `withConfigu
 
 Use `profile.format()` as the normal prompt context path. Keep Configure tools available and use `configure_profile_search` for concrete memories, imported-source questions such as "what does ChatGPT remember about me?", and details that need exact source attribution.
 
-If you set a prompt budget with `maxChars` and the installed SDK types do not yet include it, clamp the formatted string locally before putting it in the prompt.
+If you set an explicit prompt budget and the installed SDK types do not yet include `maxChars`, clamp the formatted string locally before putting it in the prompt.
 
 ## Definition of done
 
 - `configure` is installed and `.env` has `CONFIGURE_API_KEY`, `CONFIGURE_PUBLISHABLE_KEY`, `CONFIGURE_AGENT`.
 - A user can sign in with Configure — a web redirect, or a link sent in a message.
 - The one-time code is exchanged server-side and the token is stored server-side.
-- You called `configure.profile({ token }).read()`, formatted it as prompt context, and used it in a personalized response.
+- You called `configure.profile({ token }).read({ sections })`, formatted it as prompt context, and used it in a personalized response.
 
 ## Rules
 

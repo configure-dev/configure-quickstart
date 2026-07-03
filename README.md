@@ -80,7 +80,9 @@ const configureSpectrum = withConfigure({
 
 for await (const [space, message] of app.messages) {
   await configureSpectrum.handle(space, message, async (ctx) => {
-    const { profile } = await ctx.profile.read();
+    const { profile } = await ctx.profile.read({
+      sections: ["identity", "preferences", "summary"],
+    });
     const profileOverview = profile.format({ guidelines: false });
     // Give your model the formatted context plus ctx.profile.tools(); use search for specifics.
   });
@@ -93,10 +95,12 @@ Under the hood, both paths rely on the same Configure primitives: open a hosted 
 const configure = new Configure({ apiKey, agent });
 const url = configure.auth.signInUrl({ publishableKey, returnTo }); // hosted web/account-link handoff
 const { token } = await configure.auth.exchangeSignInCode(code);    // exchange (sk_)
-const read = await configure.profile({ token }).read();             // approved profile context
+const read = await configure.profile({ token }).read({
+  sections: ["identity", "preferences", "summary"],
+});                                                                // approved orientation context
 ```
 
-Use `profile.format()` as the normal prompt context path and keep `configure_profile_search` available for concrete memories, imported-source questions, or details that need exact source attribution. If you set a prompt budget with `maxChars`, clamp locally while older SDK types are still in circulation.
+Choose `sections` when the app knows the orientation it needs, then use `profile.format()` as the normal prompt context path. Keep `configure_profile_search` available for concrete memories, imported-source questions, or details that need exact source attribution. If you set an explicit prompt budget, clamp locally while older SDK types are still in circulation.
 
 Configure resolves the user server-side before profile access. In Spectrum message agents, `withConfigure()` owns the message-auth handoff so the model does not generate Configure sign-in links.
 
