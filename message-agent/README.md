@@ -26,6 +26,8 @@ Action tools, such as sending email or creating calendar events, change external
 
 The model does not generate Configure sign-in URLs; `withConfigure` handles that as runtime policy. If a Configure-backed connector later needs repair, application code can send a targeted hosted reconnect link with `ctx.replyWithReconnect({ connectors: ["gmail"] })` instead of teaching the model a URL format. The sample uses one model SDK, but the Configure and Spectrum integration does not depend on any specific model provider.
 
+For iMessage, the adapter uses Spectrum's routed `space.phone` as the current return line when it is a valid E.164 phone number. Do not hardcode a Photon line in the default path. Only add `signIn.agentPhone` for an explicit app-bound line or a deterministic fallback when your app can prove which active line should receive the returning user.
+
 The sample also attaches `onEvent` to show where production agents should emit their own privacy-safe journey telemetry. Keep those events redacted: log states, counts, modes, and reason codes, not raw phone numbers, tokens, URLs, message bodies, connector payloads, or profile facts.
 
 The sample uses `withConfigure.localStore()` for process-local adapter state while running locally. When deploying, back the store with the persistence your app already uses for server-side state: sender mappings, approved Configure tokens, sign-in delivery state, and webhook idempotency.
@@ -34,17 +36,17 @@ Spectrum owns messaging, providers, webhooks, and delivery. Configure owns ident
 
 ## E2E checklist
 
-Use this checklist for the current plain-link flow:
+Use this checklist for the managed hosted-link flow:
 
-1. Fill `.env` with real Configure keys, `CONFIGURE_AGENT`, Photon project credentials, and model credentials. `AGENT_PHONE_NUMBER` is only an override when Spectrum cannot expose the routed iMessage line.
+1. Fill `.env` with real Configure keys, `CONFIGURE_AGENT`, Photon project credentials, and model credentials.
 2. Start the worker with `npm run dev`.
 3. Text the Photon/iMessage line with a connect intent such as `connect my profile`.
-4. Confirm the adapter replies with a clean `https://sign-in.me/{agent}` link and the model does not send a second response for that turn.
+4. Confirm the adapter replies with a hosted `https://sign-in.me/{agent}` link and the model does not send a second response for that turn. On iMessage dedicated-line spaces, the link may include message return metadata such as `delivery=message` and `message_line_phone`.
 5. Complete the hosted Configure sign-in/approval flow in the browser.
 6. Text the same line again.
 7. Confirm the sender is recognized as linked, the handler runs, and the model can call Configure tools for profile context.
 8. Confirm no federated or cross-agent profile context is included before `ctx.linked` is true. Developer-scoped unlinked context may exist if the same app already wrote it.
 
-For the current plain-link flow, step 7 depends on Spectrum exposing phone-backed sender evidence on the next inbound message, which iMessage/SMS-style channels should provide through sender metadata. If a channel only exposes a channel-local sender id, the adapter will continue with a developer-scoped unlinked profile until signed message sender proof is available for that channel.
+For this flow, step 7 depends on Spectrum exposing phone-backed sender evidence on the next inbound message, which iMessage/SMS-style channels should provide through sender metadata. If a channel only exposes a channel-local sender id, the adapter will continue with a developer-scoped unlinked profile until signed message sender proof is available for that channel.
 
-The sample intentionally does not require Photon-signed message sender proof or magic-link support. `signIn.linkMode: "managed"` registers the current return line with Configure, routes link creation through Configure's message URL API, and still gets a plain `sign-in.me/{agent}` link when verification is unavailable. The handler does not change.
+The sample intentionally does not require Photon-signed message sender proof or magic-link support. `signIn.linkMode: "managed"` registers the current return line with Configure, routes link creation through Configure's message URL API, and still gets a public hosted `sign-in.me/{agent}` link when verification is unavailable. The handler does not change.
