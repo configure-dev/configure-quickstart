@@ -26,7 +26,7 @@ Action tools, such as sending email or creating calendar events, change external
 
 The model does not generate Configure sign-in URLs; `withConfigure` handles that as runtime policy. If a Configure-backed connector later needs repair, application code can send a targeted hosted reconnect link with `ctx.replyWithReconnect({ connectors: ["gmail"] })` instead of teaching the model a URL format. The sample uses one model SDK, but the Configure and Spectrum integration does not depend on any specific model provider.
 
-For iMessage, the adapter uses Spectrum's routed `space.phone` as the current return line when it is a valid E.164 phone number. Do not hardcode a Photon line in the default path. Only add `signIn.agentPhone` for an explicit app-bound line or a deterministic fallback when your app can prove which active line should receive the returning user.
+For iMessage, the adapter uses Spectrum's routed `space.phone` as the current return line when it is a valid E.164 phone number. Only add `signIn.agentPhone` for an explicit app-bound line or a deterministic fallback when your app can prove which active line should receive the returning user.
 
 The sample also attaches `onEvent` to show where production agents should emit their own privacy-safe journey telemetry. Keep those events redacted: log states, counts, modes, and reason codes, not raw phone numbers, tokens, URLs, message bodies, connector payloads, or profile facts.
 

@@ -60,7 +60,7 @@ const tools = profile.tools({
 
 For message agents on Photon Spectrum, use `configure-spectrum` and `withConfigure` with `signIn.linkMode: "managed"`. Spectrum owns messaging and delivery; Configure resolves identity, consent, profile runtime, and memory before the handler replies.
 
-For Spectrum iMessage, let the adapter infer hosted return metadata from the current turn's routed `space.phone`. Only pass `signIn.agentPhone` for an explicit, deterministic app-owned line binding.
+For Spectrum iMessage, let the adapter infer message return metadata from the current turn's routed `space.phone`. Only pass `signIn.agentPhone` for an explicit, deterministic app-owned line binding.
 
 Use Configure tools as the normal model-loop path; use `configure_profile_read` and `configure_profile_search` for overview, concrete memories, imported-source questions such as "what does ChatGPT remember about me?", and details that need exact source attribution. `profile.read({ sections })` plus `profile.format()` is available for app-owned UI, inspection, or explicit context slots. After a read-backed turn, call `profile.commit()` or `ctx.profile.commit()` with bounded user/assistant turn evidence.
 

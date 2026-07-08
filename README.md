@@ -96,7 +96,7 @@ for await (const [space, message] of app.messages) {
 
 Under the hood, both paths rely on the same Configure primitives: open a hosted Configure handoff, keep tokens server-side, expose Configure tools in the model loop, route Configure tool calls, and commit after read-backed turns. Web apps usually build the hosted URL directly. Spectrum message agents let the adapter own link delivery before the model handler runs.
 
-For Spectrum iMessage, let the adapter use the current turn's routed `space.phone` for hosted return metadata. Do not hardcode a Photon line in the default sample path; only pass `signIn.agentPhone` when your app has an explicit, deterministic line binding.
+For Spectrum iMessage, let the adapter use the current turn's routed `space.phone` for message return metadata. Only pass `signIn.agentPhone` when your app has an explicit, deterministic line binding.
 
 ```ts
 const configure = new Configure({ apiKey, agent });
