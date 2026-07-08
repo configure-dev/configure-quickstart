@@ -23,7 +23,6 @@ const configureSpectrumOptions = {
   store: withConfigure.localStore(),
   signIn: {
     displayName: "Configure",
-    agentPhone: process.env.AGENT_PHONE_NUMBER || undefined,
     linkMode: "managed" as const,
     connectors: CONFIGURE_CONNECTORS,
   },
